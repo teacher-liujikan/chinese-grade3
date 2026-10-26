@@ -1,0 +1,3112 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>國語考卷檢討</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 教育部標準楷書（中華民國教育部，CC BY-ND 3.0 TW）：先用裝置已安裝的，再載入 fonts 資料夾的字型檔 */
+@font-face{font-family:"EduKai";src:local("TW-MOE-Std-Kai"),local("教育部標準楷書"),url("fonts/edukai-4.0.woff2") format("woff2"),url("../fonts/edukai-4.0.woff2") format("woff2");font-display:swap}
+
+/* 版面：和〈我該怎麼辦？課堂導讀〉同一套——米白紙、細線卡片、紅黃藍三色筆標重點、上方黏著的關卡列 */
+:root{
+  --paper:#fbfaf6; --ink:#2a2733; --muted:#6b6676; --line:#e4e0d6; --card:#ffffff;
+  --red:#d9473a; --red-soft:#fbe4e0;
+  --yellow:#c99a06; --yellow-soft:#fdf3cc;
+  --blue:#2f6fb8; --blue-soft:#e0ecf9;
+  --ok:#2e9b5b; --ok-soft:#e1f3e8;
+  --note:#fff7d6; --note-edge:#e2c24a;
+  --qr-dark:#000000; --qr-light:#ffffff;
+  --font-display:"EduKai","TW-MOE-Std-Kai","教育部標準楷書","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
+  --font-body:"EduKai","TW-MOE-Std-Kai","教育部標準楷書","DFKai-SB","BiauKai","標楷體","Kaiti TC",serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1c1b21; --ink:#ece9f2; --muted:#a39fae; --line:#34323c; --card:#25242b;
+  --red:#ff7b6c; --red-soft:#4a2723; --yellow:#f2c94c; --yellow-soft:#3f3518;
+  --blue:#76aaf0; --blue-soft:#1f3049; --ok:#5cc98a; --ok-soft:#1e3a2a;
+  --note:#353019; --note-edge:#9c8530; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#1c1b21; --ink:#ece9f2; --muted:#a39fae; --line:#34323c; --card:#25242b;
+  --red:#ff7b6c; --red-soft:#4a2723; --yellow:#f2c94c; --yellow-soft:#3f3518;
+  --blue:#76aaf0; --blue-soft:#1f3049; --ok:#5cc98a; --ok-soft:#1e3a2a;
+  --note:#353019; --note-edge:#9c8530; color-scheme:dark}
+
+*,*::before,*::after{box-sizing:border-box}
+html{font-synthesis:none}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:1.15rem;line-height:1.8;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 4rem;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible,[role=button]:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;line-height:1.35;margin:0}
+p{margin:0}
+.wrap{max-width:52rem;margin:0 auto}
+body.big .wrap{max-width:72rem}
+
+/* 田字格 */
+.tz{display:inline-flex;gap:.35rem;flex-wrap:wrap;justify-content:center}
+.tz span{width:var(--s,64px);height:var(--s,64px);display:inline-grid;place-items:center;font-family:var(--font-display);font-size:calc(var(--s,64px)*.66);line-height:1;border-radius:6px;
+  background:linear-gradient(var(--red-soft),var(--red-soft)) center/1px 100% no-repeat,linear-gradient(var(--red-soft),var(--red-soft)) center/100% 1px no-repeat,var(--card);border:2px solid var(--red-soft)}
+.tz span.r,.tz span.key{color:var(--red);border-color:var(--red)}
+
+
+/* 檢討頁：一欄長捲動，像把考卷攤開；上方黏著大題列；每題一張卡，右上角讓學生標記考卷上的對錯 */
+.btn{font-size:.95rem;background:var(--ink);color:var(--paper);border:1px solid var(--ink);border-radius:8px;padding:.45rem 1.1rem}
+.btn.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
+.hero{padding-block:2.2rem 1rem;display:grid;gap:.7rem}
+.lesson{font-size:.85rem;letter-spacing:.15em;color:var(--muted)}
+.hero h1{font-size:clamp(2.2rem,6.5vw,3.4rem)}
+.goal{color:var(--muted);max-width:40rem}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:.6rem}
+.how div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;font-size:.92rem;line-height:1.6}
+.how b{display:block;font-family:var(--font-display);font-size:1.15rem;color:var(--red)}
+.herobtns{display:flex;gap:.5rem;flex-wrap:wrap}
+
+.bar-in .prog{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar-in .prog b{color:var(--red)}
+.filter{font-size:.85rem;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:.25rem .65rem}
+.filter[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:var(--card)}
+.tabs a{flex:none;font-size:.85rem;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:.1rem .65rem;white-space:nowrap;font-family:var(--font-display)}
+.tabs a.has{border-color:var(--red);color:var(--red)}
+
+section.sec{padding-block:2rem .5rem;border-top:1px dashed var(--line);display:grid;gap:.9rem;scroll-margin-top:7rem}
+.sec-head{display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap}
+.sec-no{font-family:var(--font-display);font-size:2rem;color:var(--red);line-height:1}
+.sec-head h2{font-size:1.6rem}
+.pts{font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 .6rem}
+.sec-tip{font-size:.95rem;color:var(--muted)}
+
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:.9rem 1.1rem 1rem;display:grid;gap:.6rem;scroll-margin-top:7rem}
+.card.wrong{border-color:var(--red)}
+.card.wrong.done{border-color:var(--ok)}
+.card[hidden]{display:none}
+.ctop{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+.qno{font-family:var(--font-display);font-size:1.15rem;font-weight:700}
+.mark{display:flex;align-items:center;gap:.3rem;font-size:.8rem;color:var(--muted)}
+.mark button{font-size:.8rem;border:1px solid var(--line);background:var(--paper);border-radius:99px;padding:.1rem .6rem}
+.mark button[aria-pressed="true"].m-ok{background:var(--ok);border-color:var(--ok);color:var(--card)}
+.mark button[aria-pressed="true"].m-x{background:var(--red);border-color:var(--red);color:var(--card)}
+.badge{font-size:.75rem;font-weight:700;border-radius:4px;padding:.05rem .45rem;color:var(--card);background:var(--ok)}
+
+.q{font-family:var(--font-display);font-size:clamp(1.25rem,4.2vw,1.55rem);line-height:1.8}
+.q em{font-style:normal;color:var(--red);background:var(--red-soft);border-radius:4px;padding:0 .15em}
+.q .blank{display:inline-block;min-width:2.6em;border-bottom:2px solid var(--red);margin:0 .15em}
+.q .ask{display:block;font-family:var(--font-body);font-size:.68em;color:var(--blue);font-weight:700;letter-spacing:.04em}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.5rem,1fr));gap:.5rem}
+.opts.long{grid-template-columns:1fr}
+.opt{position:relative;font-family:var(--font-display);font-size:clamp(1.2rem,4.4vw,1.5rem);line-height:1.4;min-height:3.2rem;padding:.35rem .6rem;border-radius:10px;border:2px solid var(--line);background:var(--paper);color:var(--ink)}
+.opts.long .opt{text-align:left;font-size:clamp(1.05rem,4vw,1.3rem)}
+.opt:hover:not(:disabled){border-color:var(--blue)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.opt.no{border-color:var(--red);background:var(--red-soft);color:var(--red);text-decoration:line-through;opacity:.8}
+.opt.dim{opacity:.4}
+.circle{position:absolute;inset:-5px;border:3px solid var(--red);border-radius:50%;pointer-events:none;animation:draw .35s ease-out}
+@keyframes draw{from{transform:scale(1.3);opacity:0}to{transform:scale(1);opacity:1}}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+.hint{font-size:.95rem;color:var(--red);background:var(--red-soft);border-radius:8px;padding:.35rem .7rem}
+.ex{background:var(--note);border:1px solid var(--note-edge);border-radius:4px;padding:.6rem .9rem;animation:pop .25s ease-out}
+.ex h3{font-size:1.1rem;color:var(--ok);margin-bottom:.1rem}
+.ex p{font-size:1rem;line-height:1.75}
+.ex p+p{margin-top:.3rem}
+.ex b{color:var(--blue)}
+.ex q{quotes:"「" "」";font-family:var(--font-display);color:var(--ink);background:var(--yellow-soft);border-radius:3px;padding:0 .1em}
+.step{font-size:.85rem;color:var(--blue);font-weight:700}
+
+/* 改錯字：可以點的字 */
+.chars{display:flex;flex-wrap:wrap;gap:.2rem;font-family:var(--font-display);font-size:clamp(1.35rem,5vw,1.75rem)}
+.ch{min-width:1.6em;height:1.8em;display:grid;place-items:center;border:1px solid transparent;border-radius:6px;background:transparent;padding:0;line-height:1}
+.ch:not(:disabled):hover{border-color:var(--blue);background:var(--blue-soft)}
+.ch.p{min-width:.9em;cursor:default}
+.ch.found{color:var(--red);border:2px solid var(--red);background:var(--red-soft);text-decoration:line-through}
+.ch.fixed{color:var(--ok);border:2px solid var(--ok);background:var(--ok-soft)}
+.ch.miss{animation:shake .35s;background:var(--line)}
+.ch:disabled{cursor:default}
+
+/* 部首連連看 */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:.6rem 1.4rem}
+.mcol{display:grid;gap:.45rem;align-content:start}
+.mcol h4{margin:0;font-size:.85rem;color:var(--muted);font-weight:500}
+.mbtn{font-family:var(--font-display);font-size:1.4rem;display:flex;align-items:center;justify-content:space-between;gap:.4rem;border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:.25rem .7rem;min-height:2.9rem}
+.mbtn small{font-family:var(--font-body);font-size:.75rem;color:var(--ok);font-weight:700}
+.mbtn.sel{border-color:var(--blue);background:var(--blue-soft)}
+.mbtn.done{border-color:var(--ok);background:var(--ok-soft);color:var(--ok);cursor:default}
+.mbtn.bad{animation:shake .35s;border-color:var(--red)}
+
+/* 照樣寫格子（和複習站同一套） */
+.sent{display:flex;flex-wrap:wrap;align-items:flex-start;gap:.15em .1em;font-family:var(--font-display);font-size:clamp(1.25rem,4.4vw,1.6rem)}
+.sent .plain{padding-top:.1em}
+.ck,.slot{display:inline-flex;flex-direction:column;align-items:center;line-height:1.3}
+.ck{border-radius:6px;padding:.1em .3em;border:2px solid var(--c)}
+.ck small,.slot small{font-family:var(--font-body);font-size:.45em;font-weight:700;color:var(--c);white-space:nowrap;margin-top:.2em}
+.ck.n,.slot.n{--c:var(--red)} .ck.n{background:var(--red-soft)}
+.ck.q,.slot.q{--c:var(--yellow)} .ck.q{background:var(--yellow-soft)}
+.ck.a,.slot.a{--c:var(--blue)} .ck.a{background:var(--blue-soft)}
+.slot i{display:block;width:2.6em;height:1.25em;border-bottom:3px solid var(--c)}
+.slot.q i{width:1.8em}
+
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.checks label{display:flex;gap:.55rem;align-items:flex-start;font-size:1rem;line-height:1.6;cursor:pointer}
+.checks input{width:1.2rem;height:1.2rem;margin-top:.25rem;accent-color:var(--ok);flex:none}
+.selfbtns{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--card)}
+
+/* 閱讀短文 */
+.passage{background:var(--note);border:1px solid var(--note-edge);border-radius:4px;padding:.6rem 1.1rem .9rem}
+.passage .ptag{display:inline-flex;font-size:.8rem;font-weight:700;letter-spacing:.12em;color:var(--red);border:2px solid var(--red);border-radius:6px;padding:0 .5rem;transform:rotate(-2deg);margin:.2rem 0 .4rem}
+.passage p{text-indent:2em;font-family:var(--font-display);font-size:clamp(1.1rem,3.8vw,1.3rem);line-height:1.95}
+.passage p+p{margin-top:.3rem}
+
+/* 訂正清單 */
+.fixlist{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:1rem 1.2rem;display:grid;gap:.7rem}
+.fixlist h2{font-size:1.5rem}
+.sumrow{display:flex;gap:.6rem;flex-wrap:wrap}
+.sumrow div{flex:1;min-width:7rem;border:1px solid var(--line);border-radius:10px;padding:.4rem .7rem;font-size:.85rem;color:var(--muted)}
+.sumrow b{display:block;font-family:var(--font-display);font-size:1.8rem;color:var(--ink);line-height:1.2;font-variant-numeric:tabular-nums}
+.sumrow .r b{color:var(--red)} .sumrow .g b{color:var(--ok)}
+.fixitems{list-style:none;margin:0;padding:0;display:grid;gap:.4rem}
+.fixitems a{display:flex;gap:.6rem;align-items:baseline;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:.4rem .7rem;font-size:.95rem}
+.fixitems a.done{border-left-color:var(--ok)}
+.fixitems .tag{font-size:.75rem;font-weight:700;white-space:nowrap;color:var(--red)}
+.fixitems a.done .tag{color:var(--ok)}
+.fixitems .t{min-width:0}
+.empty{color:var(--muted);font-size:.95rem}
+.reset{font-size:.8rem;background:none;border:0;color:var(--muted);text-decoration:underline;justify-self:start;padding:0}
+
+/* QR */
+.qrwrap{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--ink) 55%,transparent);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow-y:auto}
+.qrbox{background:var(--card);border-radius:16px;border-top:6px solid var(--red);padding:1.2rem 1.4rem 1.4rem;display:grid;gap:.8rem;justify-items:center;text-align:center;max-width:min(40rem,100%)}
+.qrbox h2{font-size:clamp(1.5rem,3.6vw,2.4rem)}
+.qrcode{background:var(--qr-light);padding:6px;border-radius:10px;line-height:0}
+.qrcode svg{display:block;width:min(60vh,72vw,26rem);height:auto}
+.qrurl{font-size:.85rem;color:var(--muted);word-break:break-all;max-width:30rem}
+.qredit{width:100%;text-align:left;font-size:.9rem}
+.qredit summary{cursor:pointer;color:var(--blue)}
+.qredit label{display:block;margin:.4rem 0 .3rem;color:var(--muted)}
+.qrrow{display:flex;gap:.4rem;flex-wrap:wrap}
+.qrrow input{flex:1;min-width:12rem;font:inherit;font-size:.95rem;padding:.4rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+footer{color:var(--muted);font-size:.8rem;padding-top:2rem;text-align:center}
+@media (max-width:30rem){.match{gap:.5rem .8rem}.mbtn{font-size:1.2rem;padding:.2rem .5rem}}/* 三步驟 */
+.stepper{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+.stp{display:grid;gap:0;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:.35rem .7rem;line-height:1.4}
+.stp b{font-family:var(--font-display);font-size:1.05rem;font-weight:400}
+.stp small{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.stp.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.stp.on small{color:var(--paper);opacity:.8}
+.stp:disabled{opacity:.45;cursor:default}
+@media (max-width:30rem){.stp b{font-size:.9rem}.stp{padding:.3rem .45rem}}
+.intro{padding-top:1.6rem;display:grid;gap:.4rem}
+.intro h2{font-size:1.8rem;color:var(--red)}
+.intro p{color:var(--muted)}
+.seat{display:flex;align-items:center;gap:.5rem;font-size:1rem}
+.seat input{width:5rem;font:inherit;font-size:1.1rem;padding:.25rem .5rem;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.msec{padding-top:1.4rem;display:grid;gap:.5rem}
+.allok{margin-left:auto;font-size:.85rem;border:1px solid var(--ok);color:var(--ok);background:var(--card);border-radius:99px;padding:.1rem .7rem}
+.mlist{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.mrow{display:grid;grid-template-columns:3.6rem 1fr auto;gap:.6rem;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:8px;padding:.45rem .7rem;transition:background .3s}
+.mrow.isok{border-left-color:var(--ok)}
+.mrow.isx{border-left-color:var(--red);background:var(--red-soft)}
+.mrow.flash{background:var(--yellow-soft)}
+.mno{font-size:.85rem;color:var(--muted)}
+.mq{min-width:0;font-family:var(--font-display);font-size:1.1rem;line-height:1.6}
+.mrow .mark button{font-size:1rem;padding:.2rem .9rem}
+@media (max-width:30rem){.mrow{grid-template-columns:1fr auto}.mno{grid-column:1/-1}}
+.next{display:grid;gap:.6rem;justify-items:center;text-align:center;padding:2rem 0 1rem}
+.next b{color:var(--red)}
+.btn.big{font-size:1.2rem;padding:.6rem 1.6rem}
+.cheer{font-family:var(--font-display);font-size:1.4rem;color:var(--ok)}
+.card .ctop .badge{margin-left:auto}
+.chars.static .ch{cursor:default}
+.answer{font-family:var(--font-display);font-size:1.25rem}
+.answer b{color:var(--ok)}
+.pairs{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.pairs li{display:grid;grid-template-columns:2.4rem 4.2rem 1fr;gap:.6rem;align-items:center;border-bottom:1px dashed var(--line);padding-bottom:.35rem}
+.pc{font-family:var(--font-display);font-size:1.6rem;color:var(--red);text-align:center}
+.pr{font-family:var(--font-display);font-size:1.2rem;color:var(--ok)}
+.ph{font-size:.92rem;color:var(--muted);min-width:0}
+.fixrow{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:.6rem}
+.copy{font-size:.95rem}
+.copy b{font-family:var(--font-display);font-size:1.2rem;color:var(--blue)}
+details.passage summary{cursor:pointer}
+.qhead{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-top:1rem;font-size:.95rem;color:var(--muted)}
+.qhead b{color:var(--red);font-size:1.2rem}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:.6rem 0 0}
+.progress i{display:block;height:100%;background:var(--red);transition:width .3s}
+.card.quiz{margin-top:.8rem}
+.ch.bad{border:2px solid var(--red);background:var(--red-soft)}
+.ex.bad{background:var(--red-soft);border-color:var(--red)}
+.ex.bad h3{color:var(--red)}
+.result{text-align:center}
+.result .intro{text-align:left}
+.scorecard{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:1rem;margin-top:1rem;display:grid;justify-items:center;gap:.3rem}
+.who{font-family:var(--font-display);font-size:1.6rem}
+.stamp{display:inline-grid;place-items:center;width:9rem;height:9rem;border-radius:50%;border:5px double var(--red);color:var(--red);font-family:var(--font-display);font-size:2rem;transform:rotate(-12deg);margin:.6rem auto;animation:stamp .45s cubic-bezier(.3,1.6,.6,1)}
+@keyframes stamp{from{transform:rotate(-12deg) scale(2.2);opacity:0}to{transform:rotate(-12deg) scale(1);opacity:1}}
+.result .big{font-family:var(--font-display);font-size:1.8rem}
+.result .sub{color:var(--muted);font-size:.95rem}
+.wronglist{text-align:left;margin-top:1.4rem;display:grid;gap:.5rem}
+.wronglist h3{font-size:1.3rem}
+.witem{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:8px;padding:.6rem .9rem}
+.witem p{font-size:.98rem}
+.witem .ans{color:var(--blue)}
+.actions{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem}
+
+/* 課次選擇 */
+.lessons{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem}
+.lsn{display:grid;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:.35rem .6rem;line-height:1.35;min-width:0}
+.lsn b{font-family:var(--font-display);font-size:1.1rem;font-weight:400}
+.lsn small{font-size:.75rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lsn.on{background:var(--red);border-color:var(--red);color:var(--card)}
+.lsn.on small{color:var(--card);opacity:.9}
+.lsn:disabled{opacity:.5;cursor:default;border-style:dashed}
+@media (max-width:40rem){.lessons{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ch.w{min-width:auto;padding:0 .25em;white-space:nowrap}
+
+@keyframes pop{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="lesson" id="lessonlabel">三上國語 · 單元卷</p>
+    <h1>考卷檢討</h1>
+    <p class="goal">三個步驟：先標記考卷上的對錯，再看詳解把錯的題目訂正好，最後做一次只有錯題的總測驗。</p>
+    <nav class="lessons" id="lessons" aria-label="選擇課次"></nav>
+    <div class="herobtns"><button class="btn ghost" id="showqr">顯示這一課的 QR code</button></div>
+  </header>
+</div>
+<div class="bar"><div class="wrap"><nav class="stepper" id="steps" aria-label="檢討步驟"></nav></div></div>
+<main class="wrap" id="main"></main>
+<div class="wrap"><footer><button class="reset" id="restart">清除紀錄，從頭開始</button><br>題目與答案依南一版三上國語各課單元卷；課文內容依南一版教師手冊。</footer></div>
+
+<div class="qrwrap" id="qr" hidden>
+  <div class="qrbox" role="dialog" aria-modal="true" aria-labelledby="qrt">
+    <h2 id="qrt">用平板掃這裡，開始檢討</h2><p id="qrl" style="font-family:var(--font-display);font-size:1.3rem;color:var(--red)"></p>
+    <div class="qrcode" id="qrcode"></div>
+    <p class="qrurl" id="qrurl"></p>
+    <details class="qredit"><summary>換成別的網址</summary>
+      <label for="qrinput">學生要打開的網址</label>
+      <div class="qrrow"><input id="qrinput" type="url" inputmode="url" placeholder="https://"><button class="btn" id="qrsave">更新</button><button class="btn ghost" id="qrreset">還原</button></div>
+    </details>
+    <button class="btn" id="qrclose">關閉</button>
+  </div>
+</div>
+
+<script>
+/* qrcode-generator 1.4.4 (MIT License, Kazuhiko Arase) */
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(row * cellSize, col * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+(function (factory) {
+  if (typeof define === 'function' && define.amd) {
+      define([], factory);
+  } else if (typeof exports === 'object') {
+      module.exports = factory();
+  }
+}(function () {
+    return qrcode;
+}));
+
+
+</script>
+<script>
+const ARTIFACT_URL="https://claude.ai/artifact/99HtGrCMUeFXVrbkDu35Fr";
+const ZY_H = s=>s; // 注音原樣顯示
+const LIST=[{n:1,name:"你好，新朋友"},{n:2,name:"我們的約定"},{n:3,name:"下課十分鐘"},{n:4,name:"一顆黑點"},{n:5,name:"火大了"},{n:6,name:"我該怎麼辦？"}];
+const LESSONS={
+ 1:{name:"你好，新朋友",ptitle:"",passage:[
+ "大家好，我是櫻花鉤吻鮭，是臺灣的國寶魚，你可以在中央銀行發行的兩千元紙鈔背面，看到我的身影呵！",
+ "我對生活環境的要求相當講究，只能生活在攝氏十六度以下的清澈溪水裡。過去，我們在臺灣高山溪流裡悠游，但隨著人類開發山區、興建水壩，棲息地遭到破壞，讓我們變得難以生存。",
+ "幸好，隨著近年保育意識提升，政府和民間團體透過拆除、改善水壩設計，強化水土保持等措施，讓我們能夠找回安穩的棲息地，逐漸恢復族群。"
+],sections:[
+ {no:"一",title:"寫國字或注音",pts:"每字 1 分，共 8 分",tip:"看注音選國字，看國字選注音。訂正時，國字要在訂正本寫三遍。",items:[
+  {id:"1-1",t:"mc",label:"第 1 題",q:"小光是個性格開「<em>ㄌㄤˇ</em>」的男孩。<span class='ask'>「ㄌㄤˇ」是哪個字？</span>",opts:["朗","郎","朋"],a:0,hint:"開朗的意思是心情明亮，想想看哪個字和「月亮、光亮」有關。",ex:"<p>「<b>朗</b>」右邊是「月」（月部），月亮很明亮，所以開朗、晴朗都用它。</p><p>「郎」右邊是耳朵旁，是新郎的郎；「朋」是兩個月，是朋友的朋。</p>",fix:"開朗"},
+  {id:"1-2",t:"mc",label:"第 1 題",q:"小光是個性格開朗的「<em>男</em>」孩。<span class='ask'>「男」的注音是？</span>",opts:["ㄋㄢˊ","ㄌㄢˊ","ㄋㄤˊ"],a:0,hint:"ㄋ和ㄌ、ㄢ和ㄤ要分清楚，慢慢念念看「男生」。",ex:"<p>「男」念 <b>ㄋㄢˊ</b>。ㄋ是鼻音，ㄢ是前鼻音，念完舌尖頂住上排牙齒後面。</p><p>「男」上面是「田」，下面是「力」：在田裡出力的人。</p>",fix:"男 ㄋㄢˊ"},
+  {id:"1-3",t:"mc",label:"第 2 題",q:"麻「<em>ㄑㄩㄝˋ</em>」在沙堆裡清潔自己的羽毛。<span class='ask'>「ㄑㄩㄝˋ」是哪個字？</span>",opts:["雀","崔","省"],a:0,hint:"這是一種鳥，找下面有「隹」，而且上面是「小」的字。",ex:"<p>「<b>雀</b>」上面是「小」，下面是「隹」（隹部）。隹部的字常和鳥有關，像雞、雁。</p><p>課文的「小雲雀」也是這個字。</p>",fix:"麻雀"},
+  {id:"1-4",t:"mc",label:"第 2 題",q:"麻雀在沙堆裡清潔自己的「<em>ㄩˇ</em>」毛。<span class='ask'>「ㄩˇ」是哪個字？</span>",opts:["羽","雨","語"],a:0,hint:"鳥身上的毛，像兩片小翅膀。",ex:"<p>「<b>羽</b>」像鳥的兩片翅膀，羽毛、羽衣都用它。</p><p>「雨」是下雨的雨，「語」是說話的語。</p>",fix:"羽毛"},
+  {id:"1-5",t:"mc",label:"第 3 題",q:"小忠這次的「<em>ㄌㄩˇ</em>」途遭遇了許多波折，幸好最後平安歸來。<span class='ask'>「ㄌㄩˇ」是哪個字？</span>",opts:["旅","族","放"],a:0,hint:"旅途就是出門旅行的路上。看清楚右下角長什麼樣子。",ex:"<p>「<b>旅</b>」是方部，旅行、旅途、旅店都用它。</p><p>它和「族」長得很像：「旅」右下角像「衣」的下半部，「族」右下角是「矢」。</p>",fix:"旅途"},
+  {id:"1-6",t:"mc",label:"第 3 題",q:"幸好最後「<em>平</em>」安歸來。<span class='ask'>「平」的注音是？</span>",opts:["ㄆㄧㄥˊ","ㄆㄧㄣˊ","ㄅㄧㄥˊ"],a:0,hint:"注意結尾是ㄥ還是ㄣ。",ex:"<p>「平」念 <b>ㄆㄧㄥˊ</b>，結尾是後鼻音ㄥ，念的時候嘴巴後面要用力。</p><p>ㄆㄧㄣˊ 是「貧」，ㄅㄧㄥˊ 不是這個字的音。</p>",fix:"平 ㄆㄧㄥˊ"},
+  {id:"1-7",t:"mc",label:"第 4 題",q:"曉諭隨身攜帶「<em>ㄑㄧㄥ</em>」便雨衣，以防下雨。<span class='ask'>「ㄑㄧㄥ」是哪個字？</span>",opts:["輕","經","清"],a:0,hint:"輕便就是不重、好帶。哪個字和重量有關？",ex:"<p>「<b>輕</b>」是車部，意思是不重，輕便、輕快、輕鬆都用它。</p><p>「經」是糸部（經過），「清」有三點水（清水）。</p>",fix:"輕便"},
+  {id:"1-8",t:"mc",label:"第 4 題",q:"曉諭隨身攜帶輕便雨「<em>ㄧ</em>」，以防下雨。<span class='ask'>「ㄧ」是哪個字？</span>",opts:["衣","依","醫"],a:0,hint:"雨衣是穿在身上的。",ex:"<p>「<b>衣</b>」是衣服的衣，雨衣、毛衣、羽衣都用它。</p><p>「依」多了單人旁，是依靠的依。</p>",fix:"雨衣"}
+ ]},
+ {no:"二",title:"改錯字",pts:"每題 1 分，共 5 分",tip:"先點出句子裡寫錯的字，再選出正確的字。",items:[
+  {id:"2-1",t:"find",label:"第 1 題",s:"姐姐的頭鬚就像黑色的瀑布。",w:4,opts:["髮","鬍","須"],a:0,ex:"<p>「鬚」是長在嘴邊、下巴的<b>鬍鬚</b>；頭上長的是<b>頭髮</b>。</p><p>兩個字上面都是「髟」，下面不一樣，要看清楚。</p>",fix:"頭髮"},
+  {id:"2-2",t:"find",label:"第 2 題",s:"媽媽剛烤好的麵包又香又翠。",w:11,opts:["脆","碎","粹"],a:0,ex:"<p>「青翠」是說植物綠油油的<b>顏色</b>；麵包咬起來的口感是「<b>脆</b>」。</p><p>「脆」是肉部（左邊像月），和吃的東西、身體有關。</p>",fix:"香脆"},
+  {id:"2-3",t:"find",label:"第 3 題",s:"爺爺年紀大了，聽力有些退朼。",w:12,opts:["化","花","比"],a:0,ex:"<p>「<b>退化</b>」是變得沒有以前好。</p><p>「化」左邊是單人旁「亻」，不是木字旁。課文「水滴化成彩虹」也是這個字。</p>",fix:"退化"},
+  {id:"2-4",t:"find",label:"第 4 題",s:"今天風和日麗，適合外出遠疋。",w:12,opts:["足","走","是"],a:0,ex:"<p>「<b>遠足</b>」是走路到比較遠的地方玩。</p><p>「足」是腳的意思，上面有一個「口」，不能漏掉。課文「最會踢足球」也是這個字。</p>",fix:"遠足"},
+  {id:"2-5",t:"find",label:"第 5 題",s:"河道要定期疏通，以免淤積尼沙。",w:12,opts:["泥","呢","妮"],a:0,ex:"<p>泥沙和水有關，所以「<b>泥</b>」要加三點水「氵」。</p><p>課文「小草剛從泥土冒出」也是這個字。</p>",fix:"泥沙"}
+ ]},
+ {no:"三",title:"填入正確的注音",pts:"每格 2 分，共 10 分",tip:"讀音跟著意思走：先想想這個字在句子裡是什麼意思。",items:[
+  {id:"3-1",t:"mc",label:"第 1 題",q:"搭車時將頭、手伸出窗外，是相當危險的「<em>行</em>」為。<span class='ask'>句子裡的「行」要怎麼念？</span>",opts:["ㄒㄧㄥˊ","ㄏㄤˊ","ㄒㄧㄥˋ"],a:0,hint:"行為是「做出來的事情」，表示「做」的時候怎麼念？",ex:"<p>行為是一個人<b>做</b>出來的事，念 <b>ㄒㄧㄥˊ</b>。</p>",fix:"行為 ㄒㄧㄥˊ"},
+  {id:"3-2",t:"mc",label:"第 2 題",q:"無論是哪個「<em>行</em>」業，老闆都相當重視員工的品行。<span class='ask'>句子裡的「行」要怎麼念？</span>",opts:["ㄒㄧㄥˊ","ㄏㄤˊ","ㄒㄧㄥˋ"],a:1,hint:"行業是各種不同的工作，和「銀行」的行念法一樣。",ex:"<p>行業是各種不同的<b>工作</b>，念 <b>ㄏㄤˊ</b>，和銀行、一行字的念法一樣。</p>",fix:"行業 ㄏㄤˊ"},
+  {id:"3-3",t:"mc",label:"第 2 題",q:"無論是哪個行業，老闆都相當重視員工的品「<em>行</em>」。<span class='ask'>句子裡的「行」要怎麼念？</span>",opts:["ㄒㄧㄥˊ","ㄏㄤˊ","ㄒㄧㄥˋ"],a:2,hint:"品行說的是一個人的表現好不好，是第四聲。",ex:"<p>品行是一個人的<b>表現</b>，念 <b>ㄒㄧㄥˋ</b>（第四聲）。</p>",fix:"品行 ㄒㄧㄥˋ"},
+  {id:"3-4",t:"mc",label:"第 3 題",q:"主任在教務「<em>處</em>」，忙著處理學生事務。<span class='ask'>句子裡的「處」要怎麼念？</span>",opts:["ㄔㄨˋ","ㄔㄨˇ"],a:0,hint:"教務處是學校裡的一個「地方」。",ex:"<p>教務處是一個<b>地方</b>，念 <b>ㄔㄨˋ</b>，和四處、好處一樣。</p>",fix:"教務處 ㄔㄨˋ"},
+  {id:"3-5",t:"mc",label:"第 3 題",q:"主任在教務處，忙著「<em>處</em>」理學生事務。<span class='ask'>句子裡的「處」要怎麼念？</span>",opts:["ㄔㄨˋ","ㄔㄨˇ"],a:1,hint:"處理是「辦事情」，是動作。",ex:"<p>處理是<b>辦事情</b>，念 <b>ㄔㄨˇ</b>（第三聲），和相處、處罰一樣。</p>",fix:"處理 ㄔㄨˇ"}
+ ]},
+ {no:"四",title:"先連出正確的部首，再造詞",pts:"連一連 1 分，造詞 2 分，共 21 分",tip:"先點左邊的字，再點右邊的部首。",items:[
+  {id:"4-1",t:"match",label:"連一連",short:"連出 衣、平、髮、旅、輕、行、處 的部首",chars:["衣","平","髮","旅","輕","行","處"],rads:["干部","衣部","車部","方部","髟部","虍部","行部"],ans:{"衣":"衣部","平":"干部","髮":"髟部","旅":"方部","輕":"車部","行":"行部","處":"虍部"},
+   hints:{"衣":"「衣」自己就是部首。","平":"「平」中間那一橫一豎，藏著「干」。","髮":"上面長長的部分和頭髮有關，是「髟」部。","旅":"看左邊，旅、族、旗都是同一個部首。","輕":"左邊是什麼交通工具？","行":"「行」自己就是部首。","處":"上面像老虎的頭，是「虍」部，不是下面的「夂」。"},
+   ex:"<p>最容易錯的三個：「<b>平</b>」是干部、「<b>處</b>」是虍部（老虎頭）、「<b>髮</b>」是髟部。</p>",fix:"部首：平→干部、處→虍部、髮→髟部"},
+  {id:"4-2",t:"self",label:"造詞",short:"用 衣、平、髮、旅、輕、行、處 各造一個詞",test:{q:"下列哪一個語詞的字寫對了？",opts:["頭髮","髮現","髮生"],a:0,ex:"<p>「頭<b>髮</b>」是頭上的毛，用髟部的「髮」。發現、發生的「發」是另一個字，不能寫成「髮」。</p>"},q:"用 衣、平、髮、旅、輕、行、處 各造一個詞。",ans:"<p>參考答案：毛<b>衣</b>、<b>平</b>地、<b>髮</b>夾、<b>旅</b>店、<b>輕</b>鬆、飛<b>行</b>、好<b>處</b></p><p>也可以用課本的語詞：羽衣、平安、頭髮、旅行、輕快、四處。</p>",checks:["每個詞都有用到那個字","詞語是真的有在用的，不是自己拼出來的","每個字都寫對，沒有少一筆或多一筆"],fix:"造詞"}
+ ]},
+ {no:"五",title:"圈出適當的語詞",pts:"每題 2 分，共 10 分",tip:"兩個語詞念起來很像，要看句子在說什麼。",items:[
+  {id:"5-1",t:"mc",label:"第 1 題",q:"鳥兒穿著白色的（　），在空中自在飛翔。",opts:["雨衣","羽衣"],a:1,hint:"穿在鳥身上的，是羽毛還是下雨用的衣服？",ex:"<p>鳥身上「穿」的是羽毛，叫<b>羽衣</b>，和課文「沒有多彩的羽衣」一樣。</p><p>雨衣是人下雨天穿的。看清楚是<b>誰</b>在穿。</p>",fix:"羽衣"},
+  {id:"5-2",t:"mc",label:"第 2 題",q:"小惠的歌聲（　），宛如枝頭上的鳥兒輕聲歌唱，悅耳動聽，讓人心情愉悅。",opts:["青翠","清脆"],a:1,hint:"這裡形容的是「聲音」。",ex:"<p>形容聲音清楚又好聽，用<b>清脆</b>，和課文「清脆的歌聲」一樣。</p><p>「青翠」是形容植物綠油油的顏色。</p>",fix:"清脆"},
+  {id:"5-3",t:"mc",label:"第 3 題",q:"菲菲踏著（　）的腳步穿過走廊，臉上洋溢著愉悅的神情，心情似乎很好。",opts:["輕快","涼快"],a:0,hint:"心情很好的時候，走路的腳步會怎麼樣？",ex:"<p><b>輕快</b>是輕鬆又快樂，可以形容腳步；課文「小雲雀輕快的飛過來」也是這樣用。</p><p>「涼快」是天氣不熱、很舒服。</p>",fix:"輕快"},
+  {id:"5-4",t:"mc",label:"第 4 題",q:"雪花落地後，悄悄（　）了透明的水珠，消失在大地的懷抱中。",opts:["化成","達成"],a:0,hint:"雪花變成水珠，是從一種樣子變成另一種樣子。",ex:"<p><b>化成</b>是從一種樣子變成另一種樣子，和課文「水滴化成彩虹」一樣。</p><p>「達成」是完成目標，例如達成任務。</p>",fix:"化成"},
+  {id:"5-5",t:"mc",label:"第 5 題",q:"安安一家在沙灘上玩了一整天，孩子們興奮的（　）奔跑，尋找貝殼和小螃蟹。",opts:["四處","去處"],a:0,hint:"孩子們在沙灘上這裡跑、那裡跑。",ex:"<p><b>四處</b>是到處、這裡那裡，和課文「最喜歡四處旅行」一樣。</p><p>「去處」是要去的地方，例如「這裡是夏天的好去處」。</p>",fix:"四處"}
+ ]},
+ {no:"六",title:"選出正確的答案",pts:"每題 3 分，共 18 分",tip:"",items:[
+  {id:"6-1",t:"mc",label:"第 1 題",q:"下列哪一個語詞的意思和「熱情」相反？",opts:["① 寒冷","② 冰冷","③ 冷門","④ 冷淡"],a:3,hint:"「熱情」是說對人的態度，不是說天氣。",ex:"<p>熱情是對人很熱心；相反的是<b>冷淡</b>，對人不熱心、不理不睬。</p><p>寒冷、冰冷是說溫度，冷門是很少人注意的事。</p>",fix:"熱情 ↔ 冷淡"},
+  {id:"6-2",t:"mc",label:"第 2 題",q:"「因為前方路面坍塌，車輛只能□□在原地，等待道路搶通。」□□中應填入哪個語詞？",opts:["① 保留","② 停留","③ 去留","④ 扣留"],a:1,long:true,hint:"車子停在原地不能動，是哪一個？",ex:"<p><b>停留</b>是停在一個地方不動，和課文「一邊停留半空中」一樣。</p><p>保留是留下來不丟掉，扣留是被別人強制留下，去留是要走還是留。</p>",fix:"停留"},
+  {id:"6-3",t:"mc",label:"第 3 題",q:"課文中，太陽向誰介紹自己呢？",opts:["① 小草","② 泥土","③ 水滴","④ 彩虹"],a:0,hint:"回想課文第一段，太陽伸出暖暖的手，拍拍了誰？",ex:"<p>課文第一段：<q>小草剛從泥土冒出，太陽伸出暖暖的手，拍拍小草說</q>，所以是<b>小草</b>。</p><p>泥土、水滴、彩虹也在這一段出現，但太陽是對小草說話。</p>",fix:"太陽向小草介紹自己"},
+  {id:"6-4",t:"mc",label:"第 4 題",q:"下列哪一個「不是」小雲雀的特色？",opts:["① 能輕快飛翔","② 歌聲清脆","③ 能停在半空中","④ 穿著多彩的羽衣"],a:3,long:true,hint:"注意題目問的是「不是」。小雲雀說自己「沒有」什麼？",ex:"<p>小雲雀說：<q>沒有多彩的羽衣，卻有清脆的歌聲</q>，所以「穿著多彩的羽衣」<b>不是</b>牠的特色。</p><p>輕快的飛、一邊唱歌一邊停留半空中，課文都有寫。</p>",fix:"小雲雀沒有多彩的羽衣"},
+  {id:"6-5",t:"mc",label:"第 5 題",q:"從課文中的敘述，可以推斷小豆子是一個怎麼樣的人？",opts:["① 性格文靜","② 追求效率","③ 喜愛運動","④ 勇於逐夢"],a:2,long:true,hint:"小豆子最會做什麼？做什麼的時候最快樂？",ex:"<p>小豆子說：<q>最會踢足球。人和球一起飛奔，是最快樂的時光</q>，所以他<b>喜愛運動</b>。</p><p>課文說他是「開朗的小豆子」，不是文靜。</p>",fix:"小豆子喜愛運動"},
+  {id:"6-6",t:"mc",label:"第 6 題",q:"〈你好，新朋友〉的課名能用下列哪個語詞替代？",opts:["① 自我反省","② 自我期許","③ 自我介紹","④ 自我肯定"],a:2,long:true,hint:"太陽、小雲雀、風和小豆子，每個人都在做同一件事。",ex:"<p>太陽、小雲雀、風和小豆子都在向新朋友說「我是……」，這就是<b>自我介紹</b>。</p>",fix:"課名＝自我介紹"}
+ ]},
+ {no:"七",title:"我會照樣寫",pts:"每格 2 分，共 8 分",tip:"格子不動，只換同一種詞。",items:[
+  {id:"7-1",t:"self",label:"照樣寫",short:"照樣寫：我是（　），有（　）（　）的（　）。",test:{q:"照著「我是太陽，有一顆熱情的心」，哪一句寫得對？",opts:["我是小貓，有一雙亮晶晶的眼睛。","我是小貓，有一雙亮晶晶的跑步。","我是小貓，有一顆亮晶晶的眼睛。"],a:0,long:true,ex:"<p>第二句的「跑步」是動作，不是身上的東西；第三句的「一顆」配不上「眼睛」，要用「一雙」。</p><p>每一格都要換成<b>同一種詞</b>，數量詞也要和東西配得起來。</p>"},q:`<div class="sent"><span class="plain">我是</span><span class="ck n">太陽<small>名詞・誰</small></span><span class="plain">，有</span><span class="ck q">一顆<small>數量詞</small></span><span class="ck a">熱情<small>形容詞</small></span><span class="plain">的</span><span class="ck n">心<small>名詞・東西</small></span><span class="plain">。</span></div>
+   <div class="sent" style="margin-top:.5rem"><span class="plain">我是</span><span class="slot n"><i></i><small>名詞・誰</small></span><span class="plain">，有</span><span class="slot q"><i></i><small>數量詞</small></span><span class="slot a"><i></i><small>形容詞</small></span><span class="plain">的</span><span class="slot n"><i></i><small>名詞・東西</small></span><span class="plain">。</span></div>`,
+   ans:"<p>參考答案：我是<b>蝴蝶</b>，有<b>一對</b><b>美麗</b>的<b>翅膀</b>。</p><p>也可以：我是<b>貓咪</b>，有<b>一雙</b><b>明亮</b>的<b>眼睛</b>。</p>",checks:["第一格寫的是「誰」（名詞）","第二格是數量詞，例如一對、一雙、一條","第三格是形容詞，說「什麼樣的」","第四格是身上的東西（名詞）","數量詞和東西配得起來（一對翅膀，不是一顆翅膀）"],fix:"照樣寫：詞性要相同"}
+ ]},
+ {no:"八",title:"造句",pts:"5 分",tip:"",items:[
+  {id:"8-1",t:"self",label:"造句",short:"造句：一邊……一邊……",test:{q:"哪一句「一邊……一邊……」用得對？",opts:["弟弟一邊吃早餐，一邊看故事書。","弟弟一邊睡覺，一邊跑步。","弟弟一邊在臺南，一邊在臺北。"],a:0,long:true,ex:"<p>「一邊……一邊……」是兩個動作<b>同時</b>在做，而且真的做得到。睡覺不能跑步，人也不能同時在兩個地方。</p>"},q:"▲ 一邊……一邊……<br><span style='font-size:.85em;color:var(--muted)'>例：我常常一邊聽音樂，一邊寫作業。</span>",
+   ans:"<p>參考答案：妹妹<b>一邊</b>吃早餐，<b>一邊</b>看故事書。</p><p>不行的例子：我一邊睡覺，一邊跑步。（兩件事不可能同時做）</p>",checks:["兩個動作是同時在做的","這兩個動作真的能一起做到","句子有主角（誰在做）","兩個「一邊」中間有逗號，句子最後有句號"],fix:"造句：一邊……一邊……"}
+ ]},
+ {no:"九",title:"閱讀測驗",pts:"每題 3 分，共 15 分",tip:"敘述正確的選 ○，錯誤的選 ✕。每一題都回到文章裡找證據。",passage:true,items:[
+  {id:"9-1",t:"mc",label:"第 1 題",q:"這是櫻花鉤吻鮭的自我介紹。",opts:["○","✕"],a:0,hint:"看第一句，是誰在說話？",ex:"<p>第一句 <q>大家好，我是櫻花鉤吻鮭</q>，用「我」來介紹自己，和課文一樣是<b>自我介紹</b>。</p>",fix:"這是櫻花鉤吻鮭的自我介紹（○）"},
+  {id:"9-2",t:"mc",label:"第 2 題",q:"櫻花鉤吻鮭是臺灣的國寶魚。",opts:["○","✕"],a:0,hint:"第一段有寫。",ex:"<p>第一段：<q>是臺灣的國寶魚</q>，所以是 ○。</p>",fix:"櫻花鉤吻鮭是臺灣的國寶魚（○）"},
+  {id:"9-3",t:"mc",label:"第 3 題",q:"中央銀行所發行的一款紙鈔上，有櫻花鉤吻鮭的圖片。",opts:["○","✕"],a:0,hint:"找找看「紙鈔」在哪一句。",ex:"<p>第一段：<q>你可以在中央銀行發行的兩千元紙鈔背面，看到我的身影</q>，所以是 ○。</p>",fix:"兩千元紙鈔背面有櫻花鉤吻鮭（○）"},
+  {id:"9-4",t:"mc",label:"第 4 題",q:"水壩有利於櫻花鉤吻鮭生存。",opts:["○","✕"],a:1,hint:"文章說興建水壩以後，棲息地怎麼了？",ex:"<p>第二段說人類 <q>興建水壩，棲息地遭到破壞</q>；第三段還要 <q>拆除、改善水壩設計</q> 才幫到牠們。</p><p>所以水壩<b>不利於</b>牠們生存，是 ✕。</p>",fix:"興建水壩破壞棲息地，不利於牠們生存（✕）"},
+  {id:"9-5",t:"mc",label:"第 5 題",q:"在臺灣，櫻花鉤吻鮭只能生活在平地的溪流中。",opts:["○","✕"],a:1,hint:"牠們住在什麼地方的溪流？水要多冷？",ex:"<p>文章說牠們在 <q>臺灣高山溪流裡悠游</q>，而且要 <q>攝氏十六度以下的清澈溪水</q>，是<b>高山</b>不是平地，所以是 ✕。</p>",fix:"牠們生活在高山溪流，不是平地（✕）"}
+ ]}
+]},
+ 2:{name:"我們的約定",ptitle:"男孩與堅果",passage:[
+ "有個小男孩在桌上發現一個裝滿堅果的玻璃罐。他想：「沒人幫我拿，我得要自己拿，還要拿一大把！」於是，他將手伸進罐子，抓了一大把的堅果。",
+ "當小男孩想要將手從罐子裡抽出來的時候，手卡住了，但他仍然緊緊抓著堅果，不想放掉任何一顆。小男孩試了好幾次，手都拔不出來，急得滿頭大汗，最後忍不住哭了。",
+ "媽媽聽見哭聲走了進來，問他：「怎麼了？」小男孩抽抽噎噎的說：「我想吃堅果，但是手拔不出來。」",
+ "媽媽說：「那就不要一次抓一大把，每次只拿一點點，你就可以輕鬆的從罐子裡抽出手了。」"
+ ],sections:[
+ {no:"一",title:"寫國字或注音",pts:"每題 2 分，共 12 分",tip:"看注音選國字，看國字選注音。訂正時，國字要在訂正本寫三遍。",items:[
+  {id:"1-1",t:"mc",label:"第 1 題",q:"校長在臺上發「<em>言</em>」。<span class='ask'>「言」的注音是？</span>",opts:["ㄧㄢˊ","ㄧㄢˋ","ㄧㄣˊ"],a:0,hint:"發言的言，是第二聲，結尾是ㄢ。",ex:"<p>「言」念 <b>ㄧㄢˊ</b>（第二聲），發言、語言都是這個音。</p><p>ㄧㄣˊ 是「銀」的音，結尾不一樣。</p>",fix:"發言 ㄧㄢˊ"},
+  {id:"1-2",t:"mc",label:"第 2 題",q:"上課時禁止「<em>ㄌㄧㄠˊ</em>」天。<span class='ask'>「ㄌㄧㄠˊ」是哪個字？</span>",opts:["聊","料","療"],a:0,hint:"聊天時要用耳朵聽別人說話。",ex:"<p>「<b>聊</b>」是耳部，聊天要用耳朵聽。</p><p>「料」是材料的料，「療」是治療的療。</p>",fix:"聊天"},
+  {id:"1-3",t:"mc",label:"第 3 題",q:"班上「<em>訂</em>」定了新的班規。<span class='ask'>「訂」的注音是？</span>",opts:["ㄉㄧㄥˋ","ㄉㄧㄥ","ㄉㄧㄣˋ"],a:0,hint:"第四聲，結尾是後鼻音ㄥ。",ex:"<p>「訂」念 <b>ㄉㄧㄥˋ</b>，第四聲，後鼻音ㄥ。訂定、訂做都是這個音。</p>",fix:"訂定 ㄉㄧㄥˋ"},
+  {id:"1-4",t:"mc",label:"第 4 題",q:"媽媽「<em>ㄊㄧˊ</em>」醒大家飯前洗手。<span class='ask'>「ㄊㄧˊ」是哪個字？</span>",opts:["提","題","堤"],a:0,hint:"提醒要用說的、用手指點，找手部的字。",ex:"<p>「<b>提</b>」是手部（扌），提醒、提起都用它。</p><p>「題」是題目的題，「堤」是河堤的堤。</p>",fix:"提醒"},
+  {id:"1-5",t:"mc",label:"第 5 題",q:"晚會現場的氣氛十分熱「<em>烈</em>」。<span class='ask'>「烈」的注音是？</span>",opts:["ㄌㄧㄝˋ","ㄌㄧㄝ","ㄋㄧㄝˋ"],a:0,hint:"讀音藏在上面的「列」，ㄌ不是ㄋ。",ex:"<p>「烈」念 <b>ㄌㄧㄝˋ</b>，讀音藏在上面的「列」。</p><p>聲母是ㄌ，不要念成ㄋ。</p>",fix:"熱烈 ㄌㄧㄝˋ"},
+  {id:"1-6",t:"mc",label:"第 6 題",q:"不要在走「<em>ㄌㄤˊ</em>」上奔跑。<span class='ask'>「ㄌㄤˊ」是哪個字？</span>",opts:["廊","郎","朗"],a:0,hint:"走廊是房屋的一部分，找有「广」的字。",ex:"<p>「<b>廊</b>」是广部，广部的字和房屋有關。讀音藏在裡面的「郎」。</p><p>「郎」是新郎，「朗」是開朗。</p>",fix:"走廊"}
+ ]},
+ {no:"二",title:"依解釋填入正確的語詞代號",pts:"每題 2 分，共 12 分",tip:"①發言　②聊天　③訂定　④提醒　⑤熱烈　⑥走廊",items:[
+  {id:"2-1",t:"mc",label:"第 1 題",q:"制定、確立。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:2,hint:"課文裡，大家在早自習一起做了什麼？",ex:"<p>「<b>訂定</b>」是制定、確立，例如訂定班級公約。</p>",fix:"訂定：制定、確立"},
+  {id:"2-2",t:"mc",label:"第 2 題",q:"表達意見、發表言論。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:0,hint:"開會時舉手說出自己的想法。",ex:"<p>「<b>發言</b>」是說出自己的意見，課文說「大家發言很熱烈」。</p>",fix:"發言：表達意見"},
+  {id:"2-3",t:"mc",label:"第 3 題",q:"隨意、輕鬆的談話。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:1,hint:"小豆子上課最難忍住的事。",ex:"<p>「<b>聊天</b>」是輕鬆的談話。小豆子覺得「上課認真不聊天」有點難。</p>",fix:"聊天：輕鬆的談話"},
+  {id:"2-4",t:"mc",label:"第 4 題",q:"情緒高昂，興奮激動。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:4,hint:"下面有火的那個語詞。",ex:"<p>「<b>熱烈</b>」是情緒高昂、興奮激動，像熱烈的鼓掌。</p>",fix:"熱烈：興奮激動"},
+  {id:"2-5",t:"mc",label:"第 5 題",q:"從旁提示或指點，使人注意。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:3,hint:"課文說：這些約定是用來＿＿我們。",ex:"<p>「<b>提醒</b>」是從旁提示，讓人注意。課文說：<q>這些約定是用來提醒我們</q>。</p>",fix:"提醒：提示使人注意"},
+  {id:"2-6",t:"mc",label:"第 6 題",q:"屋簷下可供人往來行走的通道。",opts:["① 發言","② 聊天","③ 訂定","④ 提醒","⑤ 熱烈","⑥ 走廊"],a:5,hint:"約定裡說這裡要「慢慢走」。",ex:"<p>「<b>走廊</b>」是屋簷下的通道，約定說「教室走廊慢慢走」。</p>",fix:"走廊：屋簷下的通道"}
+ ]},
+ {no:"三",title:"改錯字",pts:"每題 2 分，共 10 分",tip:"先點出句子裡寫錯的字，再選出正確的字。",items:[
+  {id:"3-1",t:"find",label:"第 1 題",s:"我和小傑是鄰居，也是同斑同學。",w:11,opts:["班","般","搬"],a:0,ex:"<p>同一班的同學是「同<b>班</b>」，班的中間是「刂」，兩邊是「王」。</p><p>「斑」中間是「文」，是斑點、斑馬的斑。</p>",fix:"同班"},
+  {id:"3-2",t:"find",label:"第 2 題",s:"這杯奶茶再加此糖會更好喝。",w:6,opts:["些","柴","紫"],a:0,ex:"<p>「一<b>些</b>」的些，下面有「二」。</p><p>「此」是此外、彼此的此，少了下面的「二」。</p>",fix:"一些"},
+  {id:"3-3",t:"find",label:"第 3 題",s:"爸爸堅恃完成工作再上床睡覺。",w:3,opts:["持","待","特"],a:0,ex:"<p>堅<b>持</b>是緊緊握住不放，所以是手部（扌）。</p><p>「恃」左邊是心（忄），意思不一樣。</p>",fix:"堅持"},
+  {id:"3-4",t:"find",label:"第 4 題",s:"姐姐和朋友鈞好明天一起去圖書館借書。",w:5,opts:["約","均","釣"],a:0,ex:"<p><b>約</b>好的約是糸部，和本課的「約定、公約」一樣。</p><p>「鈞」是金部，不是約定的意思。</p>",fix:"約好"},
+  {id:"3-5",t:"find",label:"第 5 題",s:"這家新開的超及市場，商品種類齊全，吸引不少顧客前往。",w:6,opts:["級","極","急"],a:0,ex:"<p>超<b>級</b>市場的級是糸部，和「三年級」的級一樣。</p><p>「及」只是它的聲符（讀音藏在字裡），要加上糸。</p>",fix:"超級"}
+ ]},
+ {no:"四",title:"寫出部首並造詞",pts:"部首 1 分，造詞 2 分，共 12 分",tip:"先點左邊的字，再點右邊的部首。",items:[
+  {id:"4-1",t:"match",label:"部首",short:"寫出 記、紛、愁、錄 的部首",chars:["記","紛","愁","錄"],rads:["言部","糸部","心部","金部"],ans:{"記":"言部","紛":"糸部","愁":"心部","錄":"金部"},
+   hints:{"記":"把事情寫下來要用文字、語言，看左邊。","紛":"左邊是「絞絲旁」。","愁":"心裡難過才會愁，看下面。","錄":"左邊是金字旁。"},
+   ex:"<p>最容易錯的是「<b>愁</b>」：部首是下面的「心」，不是上面的「秋」。</p>",fix:"部首：記→言部、紛→糸部、愁→心部、錄→金部"},
+  {id:"4-2",t:"self",label:"造詞",short:"用 記、紛、愁、錄 各造一個詞",q:"用 記、紛、愁、錄 各造一個詞。",ans:"<p>參考答案：日<b>記</b>、<b>紛</b>紛、憂<b>愁</b>、記<b>錄</b></p><p>也可以：記錄、紛爭、愁眉苦臉、登錄。</p>",checks:["每個詞都有用到那個字","詞語是真的有在用的","每個字都寫對"],fix:"造詞",
+   test:{q:"下列哪一個語詞的字寫對了？",opts:["記錄","紀下來","憂秋"],a:0,ex:"<p>把事情寫下來是「<b>記</b>」；憂愁的「愁」下面要有心。</p>"}}
+ ]},
+ {no:"五",title:"圈出不合適的語詞，再填入正確的代號",pts:"圈詞 1 分，代號 2 分，共 9 分",tip:"①一一　②訂定　③紛紛　④約定　⑤規定　⑥因此",items:[
+  {id:"5-1",t:"find",label:"第 1 題",toks:["我們","全家","一起","訂做","旅行","計畫","，","準備","在","下個月","出遊","。"],w:3,opts:["② 訂定","① 一一","③ 紛紛"],a:0,ex:"<p>「訂做」是先說好樣子再請人做出來，像訂做蛋糕。旅行計畫是大家討論後確定的，要用「<b>訂定</b>」。</p>",fix:"訂做→②訂定"},
+  {id:"5-2",t:"find",label:"第 2 題",toks:["哥哥","將","書籍","仔細","分類","，","紛紛","排列","整齊","，","讓","整個","書架","看起來","井然有序","。"],w:6,opts:["① 一一","⑤ 規定","④ 約定"],a:0,ex:"<p>「紛紛」是很多人接連不斷的樣子。書是照順序一本一本排好，要用「<b>一一</b>」。</p>",fix:"紛紛→①一一"},
+  {id:"5-3",t:"find",label:"第 3 題",toks:["我","看不懂","英文","雜誌","上的","生詞","，","不過","，","無法","理解","裡面","提及","的","內容","。"],w:7,opts:["⑥ 因此","④ 約定","① 一一"],a:0,ex:"<p>看不懂生詞是<b>原因</b>，無法理解內容是<b>結果</b>，要用「<b>因此</b>」。</p><p>「不過」是前後意思轉個彎，這裡沒有轉彎。</p>",fix:"不過→⑥因此"}
+ ]},
+ {no:"六",title:"可以用「幾家歡樂幾家愁」形容的畫○，不可以的打✕",pts:"每題 3 分，共 12 分",tip:"幾家歡樂幾家愁：有人開心、有人發愁，每個人遇到的事情不一樣。",items:[
+  {id:"6-1",t:"mc",label:"第 1 題",q:"老師公布期中考考試成績。",opts:["○","✕"],a:0,hint:"成績公布時，每個人的心情都一樣嗎？",ex:"<p>有人考得好很開心，有人考不好很難過，可以用，是 ○。</p>",fix:"公布成績：有人開心有人愁（○）"},
+  {id:"6-2",t:"mc",label:"第 2 題",q:"同學們合作打掃外掃區。",opts:["○","✕"],a:1,accept:[0,1],hint:"想一想，打掃的時候，每個人的心情都一樣嗎？",ex:"<p>這題 <b>○ 和 ✕ 都算對</b>，重點是說得出理由：</p><p>選 ○：有人分到輕鬆的工作很開心，有人分到辛苦的工作很發愁。</p><p>選 ✕：大家一起合作完成同一件事，沒有輸贏，心情差不多。</p>",fix:"合作打掃：○ ✕ 都可以，要說出理由"},
+  {id:"6-3",t:"mc",label:"第 3 題",q:"百貨公司購物節摸彩活動抽獎。",opts:["○","✕"],a:0,hint:"抽獎的時候，每個人都會中獎嗎？",ex:"<p>有人中獎很開心，沒中的人很失望，可以用，是 ○。</p>",fix:"摸彩抽獎：有人開心有人愁（○）"},
+  {id:"6-4",t:"mc",label:"第 4 題",q:"全班一起到自然教室上課。",opts:["○","✕"],a:1,accept:[0,1],hint:"想一想，每個人都一樣喜歡上自然課嗎？",ex:"<p>這題 <b>○ 和 ✕ 都算對</b>，重點是說得出理由：</p><p>選 ○：喜歡做實驗的同學很開心，不喜歡的同學可能會發愁。</p><p>選 ✕：大家一起去上課，每個人做的事都一樣。</p>",fix:"一起上課：○ ✕ 都可以，要說出理由"}
+ ]},
+ {no:"七",title:"依課文內容，正確的畫○，錯誤的打✕",pts:"每題 2 分，共 10 分",tip:"想想課文怎麼寫。",items:[
+  {id:"7-1",t:"mc",label:"第 1 題",q:"訂定班級公約時，由小惠主持，小豆子擔任記錄。",opts:["○","✕"],a:0,hint:"第五段：由班長小惠主持公約的訂定，我——小豆子當……",ex:"<p>課文：<q>由班長小惠主持公約的訂定，我——小豆子當記錄</q>，是 ○。</p>",fix:"小惠主持、小豆子記錄（○）"},
+  {id:"7-2",t:"mc",label:"第 2 題",q:"課文中的「狀紙」是指書寫自我介紹的小卡片。",opts:["○","✕"],a:1,hint:"「老師，有人在走廊奔跑。」這是在做什麼？",ex:"<p>「狀紙」加了引號，指的是同學們跑來<b>告狀</b>的事，像「老師，有人在走廊奔跑」，不是自我介紹的卡片，是 ✕。</p>",fix:"狀紙＝同學告狀（✕）"},
+  {id:"7-3",t:"mc",label:"第 3 題",q:"訂定班級公約的目的，是要提醒大家發揮自律的精神。",opts:["○","✕"],a:0,hint:"課文說：這些約定是用來＿＿我們。",ex:"<p>課文：<q>這些約定是用來提醒我們</q>，最後要<q>學會自己管好自己</q>，這就是自律，是 ○。</p>",fix:"公約提醒大家自律（○）"},
+  {id:"7-4",t:"mc",label:"第 4 題",q:"小豆子認為班級公約中，「教室走廊慢慢走」最難遵守。",opts:["○","✕"],a:1,hint:"小豆子說哪一個約定「有點難」？",ex:"<p>課文：<q>對我來說，上課認真不聊天有點難</q>。小豆子覺得難的是「上課認真不聊天」，是 ✕。</p>",fix:"小豆子覺得難的是上課不聊天（✕）"},
+  {id:"7-5",t:"mc",label:"第 5 題",q:"小豆子不打算遵守「上課認真不聊天」這個約定，因為他想要和好朋友阿福聊天。",opts:["○","✕"],a:1,hint:"課文最後一句，小豆子說他會怎麼做？",ex:"<p>課文：<q>不過，我們已經是三年級的學生了，我一定會努力做到</q>。小豆子雖然覺得難，還是會努力遵守，是 ✕。</p>",fix:"小豆子一定會努力做到（✕）"}
+ ]},
+ {no:"八",title:"我會照樣寫",pts:"每格 3 分，共 9 分",tip:"格子不動，只換同一種詞。",items:[
+  {id:"8-1",t:"self",label:"照樣寫",short:"照樣寫：「一張」「大大」的「班級公約」",q:`<div class="sent"><span class="ck q">一張<small>數量詞</small></span><span class="ck a">大大<small>疊字</small></span><span class="plain">的</span><span class="ck n">班級公約<small>名詞・東西</small></span></div>
+   <div class="sent" style="margin-top:.5rem"><span class="slot q"><i></i><small>數量詞</small></span><span class="slot a"><i></i><small>疊字</small></span><span class="plain">的</span><span class="slot n"><i></i><small>名詞・東西</small></span></div>`,
+   ans:"<p>參考答案：<b>一隻</b><b>胖胖</b>的<b>小貓</b>、<b>一朵</b><b>紅紅</b>的<b>玫瑰花</b>、<b>一顆</b><b>圓圓</b>的<b>皮球</b></p>",checks:["第一格是數量詞（一隻、一朵、一顆）","第二格是疊字（兩個一樣的字）","第三格是東西（名詞）","數量詞和東西配得起來（一朵花，不是一隻花）"],fix:"照樣寫：數量詞＋疊字＋的＋東西",
+   test:{q:"照著「一張大大的班級公約」，哪一個寫得對？",opts:["一朵紅紅的玫瑰花","一隻紅紅的玫瑰花","一朵紅的玫瑰花"],a:0,long:true,ex:"<p>花要用「朵」；中間要用疊字「紅紅」，不是只有一個「紅」。</p>"}}
+ ]},
+ {no:"九",title:"造句",pts:"每題 5 分，共 10 分",tip:"",items:[
+  {id:"9-1",t:"self",label:"第 1 題",short:"造句：幾家歡樂幾家愁",q:"幾家歡樂幾家愁——",ans:"<p>參考答案：大隊接力比賽結束後，贏的班級歡呼、輸的班級難過，真是<b>幾家歡樂幾家愁</b>。</p>",checks:["句子裡有「有人開心、有人發愁」的情況","把結果不一樣的原因寫出來了","句子完整，有標點符號"],fix:"造句：幾家歡樂幾家愁",
+   test:{q:"哪一句「幾家歡樂幾家愁」用得對？",opts:["拔河比賽結束，贏的班歡呼、輸的班難過，真是幾家歡樂幾家愁。","今天天氣很好，真是幾家歡樂幾家愁。","大家一起唱生日快樂歌，真是幾家歡樂幾家愁。"],a:0,long:true,ex:"<p>要有人開心、有人難過，才能用「幾家歡樂幾家愁」。</p>"}},
+  {id:"9-2",t:"self",label:"第 2 題",short:"造句：……不過……",q:"……不過……——",ans:"<p>參考答案：這次的題目很難，<b>不過</b>，我還是認真寫完了。</p><p>「不過」前後的意思要<b>轉個彎</b>。</p>",checks:["「不過」前後的意思是相反、轉個彎的","句子完整，說得通","「不過」後面有逗號"],fix:"造句：……不過……",
+   test:{q:"哪一句「不過」用得對？",opts:["妹妹很怕黑，不過她還是自己去關燈。","妹妹很怕黑，不過她很害怕。","妹妹很怕黑，不過她不敢自己睡。"],a:0,long:true,ex:"<p>怕黑卻還是自己去關燈，意思轉了個彎，才用「不過」。另外兩句前後意思一樣，沒有轉彎。</p>"}}
+ ]},
+ {no:"十",title:"閱讀測驗",pts:"每題 2 分，共 4 分",tip:"回到文章裡找證據。",passage:true,items:[
+  {id:"10-1",t:"mc",label:"第 1 題",q:"為什麼小男孩會急得滿頭大汗？",opts:["① 罐子打不開","② 手卡在罐子裡","③ 堅果不見了","④ 罐子破了"],a:1,long:true,hint:"第二段：小男孩想把手抽出來的時候，發生了什麼事？",ex:"<p>第二段：<q>手卡住了……小男孩試了好幾次，手都拔不出來，急得滿頭大汗</q>。</p>",fix:"手卡在罐子裡"},
+  {id:"10-2",t:"mc",label:"第 2 題",q:"這則故事告訴了我們什麼道理？",opts:["① 成功是點點滴滴的累積","② 堅果不能一口氣吃太多","③ 如果太貪心，最後什麼都得不到","④ 要先思考事情的後果再去做"],a:2,long:true,hint:"小男孩一次抓一大把，結果怎麼了？",ex:"<p>小男孩想<b>一次拿一大把</b>，太貪心，結果手卡住，一顆也吃不到。媽媽教他每次只拿一點點。</p><p>所以道理是：太貪心，最後什麼都得不到。</p>",fix:"太貪心，什麼都得不到"}
+ ]}
+]},
+ 3:{name:"下課十分鐘",ptitle:"",passage:[],sections:[
+ {no:"一",title:"寫國字或注音",pts:"每字 2 分，共 12 分",tip:"清晨，當金色的陽光灑向大地，森林裡的鳥兒們早已經「ㄓㄨㄣˇ」備好要大顯身手了。鳥兒們「ㄨㄤˋ」情的在枝頭上「ㄅㄧㄠˇ」演舞「ㄉㄠˇ」，清亮的歌聲「ㄒㄧㄤˇ」遍了整座森林，「無」處不充滿歡樂與活力。",items:[
+  {id:"1-1",t:"mc",label:"第 ① 格",q:"鳥兒們早已經「<em>ㄓㄨㄣˇ</em>」備好要大顯身手了。<span class='ask'>「ㄓㄨㄣˇ」是哪個字？</span>",opts:["準","淮","隼"],a:0,hint:"準備、準時都是這個字，右下有「十」。",ex:"<p>「<b>準</b>」是準備、準時的準。和「淮」很像，「準」的下面多了一個「十」。</p>",fix:"準備"},
+  {id:"1-2",t:"mc",label:"第 ② 格",q:"鳥兒們「<em>ㄨㄤˋ</em>」情的在枝頭上表演。<span class='ask'>「ㄨㄤˋ」是哪個字？</span>",opts:["忘","望","往"],a:0,hint:"忘情是投入到忘了一切，和「心」有關。",ex:"<p>「<b>忘</b>」是心部，忘記、忘情都用它。上面是「亡」，下面是「心」。</p><p>「望」是看，「往」是去。</p>",fix:"忘情"},
+  {id:"1-3",t:"mc",label:"第 ③ 格",q:"鳥兒們在枝頭上「<em>ㄅㄧㄠˇ</em>」演舞蹈。<span class='ask'>「ㄅㄧㄠˇ」是哪個字？</span>",opts:["表","錶","俵"],a:0,hint:"表演的表，沒有金字旁。",ex:"<p>「<b>表</b>」是表演、表現的表。加上金字旁的「錶」是手錶。</p>",fix:"表演"},
+  {id:"1-4",t:"mc",label:"第 ④ 格",q:"鳥兒們在枝頭上表演舞「<em>ㄉㄠˇ</em>」。<span class='ask'>「ㄉㄠˇ」是哪個字？</span>",opts:["蹈","稻","滔"],a:0,hint:"跳舞要用腳，找足字旁的字。",ex:"<p>舞「<b>蹈</b>」要用腳跳，所以是足字旁。</p><p>「稻」是稻米，「滔」是滔滔不絕。</p>",fix:"舞蹈"},
+  {id:"1-5",t:"mc",label:"第 ⑤ 格",q:"清亮的歌聲「<em>ㄒㄧㄤˇ</em>」遍了整座森林。<span class='ask'>「ㄒㄧㄤˇ」是哪個字？</span>",opts:["響","想","享"],a:0,hint:"和聲音有關，下面有一個「音」。",ex:"<p>聲音傳得很遠是「<b>響</b>」，下面是「音」。</p><p>「想」是想法，「享」是享受。</p>",fix:"響遍"},
+  {id:"1-6",t:"mc",label:"第 ⑥ 格",q:"「<em>無</em>」處不充滿歡樂與活力。<span class='ask'>「無」的注音是？</span>",opts:["ㄨˊ","ㄨˇ","ㄨˋ"],a:0,hint:"無處、無聊都是第二聲。",ex:"<p>「無」念 <b>ㄨˊ</b>，第二聲。ㄨˇ 是「五、舞」，ㄨˋ 是「物、霧」。</p>",fix:"無 ㄨˊ"}
+ ]},
+ {no:"二",title:"改錯字",pts:"每字 1 分，共 5 分",tip:"弟弟傯有許多新點子，常常讓人驚喜。有一次，他在圖畫本上畫了一個大大的鬥鍾，還巧妙的把矩針設計成可愛的軌臉，整個畫面看起來活潑又有趣。（這段話裡有 5 個錯字）",items:[
+  {id:"2-1",t:"find",label:"第 1 個",s:"弟弟傯有許多新點子，常常讓人驚喜。",w:2,opts:["總","聰","忽"],a:0,ex:"<p>「<b>總</b>是」的總是糸部。「傯」左邊是單人旁，不是這個字。</p>",fix:"總是"},
+  {id:"2-2",t:"find",label:"第 2 個",s:"他在圖畫本上畫了一個大大的鬥鐘，",w:13,opts:["鬧","門","問"],a:0,ex:"<p>「<b>鬧</b>鐘」的鬧，裡面是「市」。「鬥」是戰鬥的鬥，裡面不一樣。</p>",fix:"鬧鐘"},
+  {id:"2-3",t:"find",label:"第 3 個",s:"他在圖畫本上畫了一個大大的鬧鍾，",w:14,opts:["鐘","種","衝"],a:0,ex:"<p>會響的時鐘、鬧鐘，右邊是「童」：<b>鐘</b>。「鍾」右邊是「重」，是另一個字。</p>",fix:"鬧鐘"},
+  {id:"2-4",t:"find",label:"第 4 個",s:"還巧妙的把矩針設計成可愛的鬼臉，",w:5,opts:["短","知","豆"],a:0,ex:"<p>時鐘上有長針和<b>短</b>針。「短」左邊是「矢」，右邊是「豆」；「矩」右邊是「巨」。</p>",fix:"短針"},
+  {id:"2-5",t:"find",label:"第 5 個",s:"還巧妙的把短針設計成可愛的軌臉，",w:13,opts:["鬼","規","貴"],a:0,ex:"<p>做<b>鬼</b>臉的鬼，課文生字「鬼」。「軌」是車部，是軌道的軌。</p>",fix:"鬼臉"}
+ ]},
+ {no:"三",title:"填入正確用字",pts:"每個 2 分，共 16 分",tip:"字長得很像，要看句子的意思來選。",items:[
+  {id:"3-1",t:"mc",label:"1.【踢　暢】",q:"下課時，大家在操場上（　）足球，",opts:["踢","暢"],a:0,hint:"用腳做的動作。",ex:"<p>「<b>踢</b>」是足字旁，用腳踢球。</p>",fix:"踢足球"},
+  {id:"3-2",t:"mc",label:"1.【踢　暢】",q:"享受（　）快的運動時光。",opts:["踢","暢"],a:1,hint:"心情很舒服、很痛快。",ex:"<p>「<b>暢</b>快」是心情舒暢、痛快。「暢」左邊是「申」，「踢」左邊是「足」。</p>",fix:"暢快"},
+  {id:"3-3",t:"mc",label:"2.【責　貴】",q:"違反校規的人會受到（　）罰。",opts:["責","貴"],a:0,hint:"做錯事會被處罰。",ex:"<p>「<b>責</b>罰」是處罰。「責」上面是「龶」，「貴」上面是「中」加一橫。</p>",fix:"責罰"},
+  {id:"3-4",t:"mc",label:"2.【責　貴】",q:"因為不小心打破珍（　）的花瓶，",opts:["責","貴"],a:1,hint:"很寶貴、很值錢。",ex:"<p>「珍<b>貴</b>」是很寶貴、很難得。</p>",fix:"珍貴"},
+  {id:"3-5",t:"mc",label:"2.【責　貴】",q:"妹妹自（　）的哭了起來。",opts:["責","貴"],a:0,hint:"覺得是自己的錯。",ex:"<p>「自<b>責</b>」是怪自己做錯事。</p>",fix:"自責"},
+  {id:"3-6",t:"mc",label:"3.【畫　盡】",q:"大海一望無際，隱藏著無窮無（　）的祕密。",opts:["畫","盡"],a:1,hint:"沒有完、沒有結束。",ex:"<p>「無窮無<b>盡</b>」是沒有結束、用不完。「盡」下面是「皿」，「畫」下面是「田」和一橫。</p>",fix:"無窮無盡"},
+  {id:"3-7",t:"mc",label:"3.【畫　盡】",q:"這位（　）家很久沒推出新作品，",opts:["畫","盡"],a:0,hint:"這個人的工作是畫圖。",ex:"<p>「<b>畫</b>家」是畫圖的人。</p>",fix:"畫家"},
+  {id:"3-8",t:"mc",label:"3.【畫　盡】",q:"因此有人說他江郎才（　）了。",opts:["畫","盡"],a:1,hint:"才能用完了。",ex:"<p>「江郎才<b>盡</b>」是才能用完了，寫不出、畫不出好作品。</p>",fix:"江郎才盡"}
+ ]},
+ {no:"四",title:"先寫注音，再將字義代號填入",pts:"字音 1 分，代號 3 分，共 12 分",tip:"朝　①對、向　②有活力的　③早晨",items:[
+  {id:"4-1",t:"mc",label:"1. 迎向朝陽",q:"迎向「<em>朝</em>」陽　<span class='ask'>「朝」的注音是？</span>",opts:["ㄓㄠ","ㄔㄠˊ"],a:0,hint:"早上的太陽，念第一聲。",ex:"<p>「朝」當<b>早晨</b>講時念 <b>ㄓㄠ</b>。</p>",fix:"朝陽 ㄓㄠ"},
+  {id:"4-2",t:"mc",label:"1. 迎向朝陽",q:"迎向「<em>朝</em>」陽　<span class='ask'>這裡的「朝」是什麼意思？</span>",opts:["① 對、向","② 有活力的","③ 早晨"],a:2,hint:"朝陽是什麼時候的太陽？",ex:"<p>朝陽是<b>早晨</b>的太陽，所以是 ③。</p>",fix:"朝陽：③早晨"},
+  {id:"4-3",t:"mc",label:"2. 四腳朝天",q:"四腳「<em>朝</em>」天　<span class='ask'>「朝」的注音是？</span>",opts:["ㄓㄠ","ㄔㄠˊ"],a:1,hint:"「對著、向著」的意思念第二聲。",ex:"<p>「朝」當<b>對、向</b>講時念 <b>ㄔㄠˊ</b>。</p>",fix:"四腳朝天 ㄔㄠˊ"},
+  {id:"4-4",t:"mc",label:"2. 四腳朝天",q:"四腳「<em>朝</em>」天　<span class='ask'>這裡的「朝」是什麼意思？</span>",opts:["① 對、向","② 有活力的","③ 早晨"],a:0,hint:"跌倒時四隻腳對著哪裡？",ex:"<p>四腳朝天是四隻腳<b>對著</b>天空，所以是 ①。</p>",fix:"四腳朝天：①對、向"},
+  {id:"4-5",t:"mc",label:"3. 朝氣十足",q:"「<em>朝</em>」氣十足　<span class='ask'>「朝」的注音是？</span>",opts:["ㄓㄠ","ㄔㄠˊ"],a:0,hint:"朝氣是像早晨一樣有精神，念第一聲。",ex:"<p>朝氣是像早晨一樣有精神，念 <b>ㄓㄠ</b>。</p>",fix:"朝氣 ㄓㄠ"},
+  {id:"4-6",t:"mc",label:"3. 朝氣十足",q:"「<em>朝</em>」氣十足　<span class='ask'>這裡的「朝」是什麼意思？</span>",opts:["① 對、向","② 有活力的","③ 早晨"],a:1,hint:"朝氣十足的人看起來怎麼樣？",ex:"<p>朝氣十足是很<b>有活力</b>，所以是 ②。</p><p>小祕訣：念 ㄔㄠˊ 的只有「對、向」；念 ㄓㄠ 的是「早晨」和「有活力的」。</p>",fix:"朝氣：②有活力的"}
+ ]},
+ {no:"五",title:"依情境填入適當的語詞",pts:"每題 3 分，共 6 分",tip:"盡責　失望　神氣　期待　熱鬧",items:[
+  {id:"5-1",t:"mc",label:"第 1 題",q:"夜市裡人來人往，各個攤位的叫賣聲延續不斷。……（　）",opts:["盡責","失望","神氣","期待","熱鬧"],a:4,hint:"人很多、聲音很多。",ex:"<p>人來人往、叫賣聲不斷，是<b>熱鬧</b>。</p>",fix:"熱鬧"},
+  {id:"5-2",t:"mc",label:"第 2 題",q:"小惠是班上的第一名，在晨會時站上司令臺領獎。……（　）",opts:["盡責","失望","神氣","期待","熱鬧"],a:2,hint:"她「已經」站上臺領獎了，心裡和臉上是什麼樣子？",ex:"<p>小惠<b>已經站上臺領獎</b>，很得意、很有面子，是<b>神氣</b>。</p><p>要分清楚：<b>還沒上臺前</b>，心裡很想快點上臺，是「期待」；<b>已經站上臺</b>領獎了，才是「神氣」。</p>",fix:"神氣（已經上臺）／期待（還沒上臺）"}
+ ]},
+ {no:"六",title:"選出正確的答案",pts:"每題 4 分，共 28 分",tip:"",items:[
+  {id:"6-1",t:"mc",label:"第 1 題",q:"「小莉在比賽中一時□□□□，錯失了奪冠的最佳時機。」□中應該填入哪個語詞？",opts:["① 閃閃發亮","② 得意忘形","③ 暢快無比","④ 突發奇想"],a:1,long:true,hint:"因為太得意、太高興，結果出錯了。",ex:"<p><b>得意忘形</b>是高興過了頭、忘了自己該做的事，所以才錯失奪冠的機會。課文裡也有：<q>還不能得意忘形的在走廊奔跑</q>。</p>",fix:"得意忘形"},
+  {id:"6-2",t:"mc",label:"第 2 題",q:"下課時間，小豆子喜歡跟阿福做什麼事？",opts:["① 到操場跑步","② 到操場踢足球","③ 到遊戲場溜滑梯","④ 在教室聊天"],a:1,long:true,hint:"小豆子最會、最喜歡的運動。",ex:"<p>課文：<q>我呢？我喜歡和阿福去操場上踢足球。</q>所以是<b>到操場踢足球</b>。</p>",fix:"小豆子和阿福踢足球"},
+  {id:"6-3",t:"mc",label:"第 3 題",q:"「下課的快樂時光總是溜得特別快。」表現出小豆子對下課有什麼感受？",opts:["① 喜歡","② 討厭","③ 不在意","④ 不滿"],a:0,long:true,hint:"快樂的時間，會覺得過得很快。",ex:"<p>課文：<q>只是，下課的快樂時光總是溜得特別快。</q>覺得時間過得特別快，是因為很<b>快樂、很喜歡</b>下課。</p>",fix:"喜歡下課"},
+  {id:"6-4",t:"mc",label:"第 4 題",q:"課文中，回教室時需要遵守哪條班級公約？",opts:["① 上課認真不聊天","② 上學到校要準時","③ 教室走廊慢慢走","④ 上下樓梯靠邊走"],a:2,long:true,hint:"第二課的約定裡，走在走廊上要怎樣？",ex:"<p>課文：<q>回教室時，還不能得意忘形的在走廊奔跑</q>。不能在走廊奔跑，就是第二課的約定：<b>教室走廊慢慢走</b>。</p>",fix:"教室走廊慢慢走"},
+  {id:"6-5",t:"mc",label:"第 5 題",q:"為什麼說「當上課鐘聲一響，我們就得和足球說再見」？",opts:["① 因為足球要回家了","② 因為小豆子決心好好用功，不再踢足球","③ 因為足球被老師沒收了","④ 因為要上課了，不能再踢足球"],a:3,long:true,hint:"上課鐘響了，大家要去做什麼？",ex:"<p>課文：<q>當上課鐘聲一響，我們就得和足球說再見。</q></p><p>「和足球說再見」是把足球當成人來寫：上課鐘響了，<b>要回教室上課</b>，不能再踢球。足球不會真的回家。</p>",fix:"要上課了，不能再踢球"},
+  {id:"6-6",t:"mc",label:"第 6 題",q:"依據〈下課十分鐘〉，下列哪個敘述正確？",opts:["① 上課鐘響後，要迅速跑回教室","② 班長會注意同學有無遵守公約","③ 下課時光特別的無聊","④ 下課時教室會淨空"],a:1,long:true,hint:"一個一個檢查：哪些和公約、課文說的不一樣？",ex:"<p>課文：<q>回教室時，還不能得意忘形的在走廊奔跑，因為班長小惠會很盡責的盯著我們。</q>所以 <b>② 班長會注意同學有沒有遵守公約</b>是正確的。</p><p>① 回教室不能用跑的；③ 課文說快樂時光溜得特別快，一點也不無聊；④ 下課時還是有同學留在教室裡。</p>",fix:"班長會注意同學遵守公約"},
+  {id:"6-7",t:"mc",label:"第 7 題",q:"下列哪一個情境「不可能」發生在下課十分鐘裡？",opts:["① 甜甜在教室裡看故事書","② 小安和美美在玩捉迷藏","③ 阿俊和小翔在聊天","④ 小益在教室裡吃晚餐"],a:3,long:true,hint:"注意「不可能」，下課十分鐘是白天在學校的時間。",ex:"<p>下課十分鐘是白天在學校，<b>晚餐</b>是晚上在家吃的，所以 ④ 不可能。</p>",fix:"下課不會吃晚餐"}
+ ]},
+ {no:"七",title:"圈出句子中的動詞，並正確分類",pts:"圈詞 1 分，分類 2 分，共 9 分",tip:"體育課是我最「期待」的課堂。有的同學在操場上「奔跑」，有的同學在球場上「打球」，到處都是我們的歡笑聲。",items:[
+  {id:"7-1",t:"mc",label:"圈動詞",q:"短文裡的三個動詞是哪一組？",opts:["期待、奔跑、打球","課堂、操場、球場","期待、奔跑、歡笑聲"],a:0,long:true,hint:"動詞是「做的事」或「心裡想的事」。",ex:"<p>動詞是<b>期待、奔跑、打球</b>。</p><p>「歡笑聲」是一種<b>聲音</b>，是名詞，不是動詞，不要圈。</p>",fix:"動詞：期待、奔跑、打球（歡笑聲是名詞）"},
+  {id:"7-2",t:"mc",label:"分類",q:"「奔跑」和「打球」是哪一種動詞？",opts:["行為動作","內心想法"],a:0,hint:"看得到身體在動嗎？",ex:"<p>奔跑、打球是看得到的身體動作，屬於<b>行為動作</b>。</p>",fix:"行為動作：奔跑、打球"},
+  {id:"7-3",t:"mc",label:"分類",q:"「期待」是哪一種動詞？",opts:["行為動作","內心想法"],a:1,hint:"期待是心裡在想，還是身體在動？",ex:"<p>期待是心裡很想要、很盼望，屬於<b>內心想法</b>。</p>",fix:"內心想法：期待"}
+ ]},
+ {no:"八",title:"我會照樣寫",pts:"每格 3 分，共 6 分",tip:"",items:[
+  {id:"8-1",t:"self",label:"照樣寫",short:"照樣寫：在「草地上」「飛奔」",q:`<div class="sent"><span class="plain">在</span><span class="ck n">草地上<small>地方</small></span><span class="ck a">飛奔<small>動作</small></span></div>
+   <div class="sent" style="margin-top:.5rem"><span class="plain">在</span><span class="slot n"><i></i><small>地方</small></span><span class="slot a"><i></i><small>動作</small></span></div>`,
+   ans:"<p>參考答案：在<b>舞臺上</b><b>表演</b>、在<b>公園裡</b><b>散步</b>、在<b>圖書館</b><b>看書</b></p>",checks:["第一格是一個地方","第二格是在那個地方做的動作","地方和動作配得起來"],fix:"照樣寫：在＋地方＋動作",
+   test:{q:"照著「在草地上飛奔」，哪一個寫得對？",opts:["在泳池裡游泳","在游泳泳池裡","在快樂的泳池"],a:0,long:true,ex:"<p>「在」後面先寫<b>地方</b>，再寫<b>動作</b>：在泳池裡（地方）＋游泳（動作）。</p>"}}
+ ]},
+ {no:"九",title:"造句",pts:"6 分",tip:"",items:[
+  {id:"9-1",t:"self",label:"有……也有……",short:"造句：有……也有……",q:"▲ 有……也有……<br><span style='font-size:.85em;color:var(--muted)'>例：這本書有感人的情節，也有精美的插圖，令人回味無窮。</span>",
+   ans:"<p>參考答案：花園裡<b>有</b>紅色的玫瑰，<b>也有</b>黃色的向日葵，真是美麗極了。</p><p>「有」和「也有」後面，都要接<b>同一類</b>的東西。</p>",checks:["「有」和「也有」後面都是東西（名詞）","兩樣東西是同一類的","句子完整，有標點符號"],fix:"造句：有……也有……",
+   test:{q:"哪一句「有……也有……」用得對？",opts:["花園裡有紅色的玫瑰，也有黃色的向日葵。","花園裡有紅色的玫瑰，也有很漂亮。","花園裡有紅色的玫瑰，也有花園。"],a:0,long:true,ex:"<p>「有」和「也有」後面都要接同一類的東西：玫瑰、向日葵都是花。</p>"}}
+ ]}
+]}
+
+};
+
+/* ===================== 狀態 ===================== */
+let CUR=1, SECTIONS=[], PASSAGE=[], PTITLE="", ALL=[], BY={}, KEY="", ST={m:{},fixed:{}};
+const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(ST)); }catch(e){} };
+function load(n){
+  CUR=n; const L=LESSONS[n];
+  SECTIONS=L.sections; PASSAGE=L.passage||[]; PTITLE=L.ptitle||"";
+  ALL=SECTIONS.flatMap(s=>s.items.map(it=>({...it,sec:s})));
+  BY=Object.fromEntries(ALL.map(it=>[it.id,it]));
+  KEY = n===1 ? "lesson1-exam-review-v2" : "exam-review-l"+n;
+  try{ ST=JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ ST={}; }
+  ST.m=ST.m||{}; ST.fixed=ST.fixed||{};
+  stage=ST.stage||1; quiz=null;
+  if(stage===2 && !allMarked()) stage=1;
+  try{ localStorage.setItem("exam-review-last",String(n)); }catch(e){}
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const strip=s=>String(s).replace(/<span class='ask'>.*?<\/span>/g,"").replace(/<br>.*/,"").replace(/<[^>]+>/g,"").trim();
+const isAns=(it,i)=>it.accept? it.accept.includes(i) : i===it.a;
+const toks=it=>it.toks||[...it.s];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const wrongs=()=>ALL.filter(it=>ST.m[it.id]==="x");
+const markedN=()=>ALL.filter(it=>ST.m[it.id]).length;
+const allMarked=()=>markedN()===ALL.length;
+const allFixed=()=>wrongs().every(it=>ST.fixed[it.id]);
+function shortQ(it){
+  if(it.short) return it.short;
+  if(it.t==="find") return toks(it).join("");
+  return strip(it.q);
+}
+let stage=1;
+let quiz=null;
+const main=document.getElementById("main");
+function go(n){ stage=n; ST.stage=n<3?n:2; save(); render(); scrollTo(0,0); }
+
+/* ===================== 上方步驟列 ===================== */
+function paintBar(){
+  const w=wrongs();
+  const steps=[
+    {n:1,t:"標記對錯",ok:true,sub:`${markedN()} / ${ALL.length}`},
+    {n:2,t:"看詳解訂正",ok:allMarked(),sub:allMarked()?`${w.filter(it=>ST.fixed[it.id]).length} / ${w.length}`:"先標記完"},
+    {n:3,t:"錯題總測驗",ok:allMarked()&&w.length>0&&allFixed(),sub:ST.best?`最佳 ${ST.best}`:(w.length?`${w.length} 題`:"—")}
+  ];
+  document.getElementById("steps").innerHTML=steps.map(s=>`<button class="stp ${stage===s.n?"on":""}" data-go="${s.n}" ${s.ok?"":"disabled"}><b>${["①","②","③"][s.n-1]} ${s.t}</b><small>${s.sub}</small></button>`).join("");
+}
+document.getElementById("steps").addEventListener("click",e=>{ const b=e.target.closest("[data-go]"); if(b && !b.disabled) go(+b.dataset.go); });
+
+const NUM=["一","二","三","四","五","六"];
+function paintLessons(){
+  document.getElementById("lessons").innerHTML=LIST.map(l=>{const ok=!!LESSONS[l.n];return `<button class="lsn ${l.n===CUR?"on":""}" data-lesson="${l.n}" ${ok?"":"disabled"}><b>第${NUM[l.n-1]}課</b><small>${ok?l.name:l.name+"・準備中"}</small></button>`}).join("");
+  document.getElementById("lessonlabel").textContent=`三上國語 · 第${NUM[CUR-1]}課〈${LESSONS[CUR].name}〉單元卷`;
+}
+document.getElementById("lessons").addEventListener("click",e=>{
+  const b=e.target.closest("[data-lesson]"); if(!b||b.disabled) return;
+  const n=+b.dataset.lesson; if(n===CUR) return;
+  load(n); try{ history.replaceState(null,"","#l"+n); }catch(_){ location.hash="l"+n; }
+  render(); scrollTo(0,0);
+});
+function render(){
+  paintLessons();
+  if(stage===1) renderMark();
+  else if(stage===2) renderFix();
+  else renderQuiz();
+  paintBar();
+}
+
+/* ===================== ① 標記 ===================== */
+function renderMark(){
+  const seat=ST.seat||"";
+  main.innerHTML=`
+  <div class="intro"><h2>① 標記對錯</h2><p>看著老師改好的考卷，每一題點「對」或「錯」。整個大題都對，可以按「這大題全對」。</p>
+    <label class="seat" for="seat">我的座號<input id="seat" inputmode="numeric" maxlength="3" value="${esc(seat)}" placeholder="例：12"></label></div>
+  ${SECTIONS.map(s=>`
+    <section class="msec">
+      <div class="sec-head"><span class="sec-no">${s.no}、</span><h2>${s.title}</h2><span class="pts">${s.pts}</span><button class="allok" data-allok="${s.no}">這大題全對</button></div>
+      <ul class="mlist">${s.items.map(it=>{const v=ST.m[it.id];return `
+        <li class="mrow ${v==="x"?"isx":v==="ok"?"isok":""}" id="r-${it.id}">
+          <span class="mno">${it.label}</span><span class="mq">${esc(shortQ(it))}</span>
+          <span class="mark"><button class="m-ok" data-mark="ok" data-id="${it.id}" aria-pressed="${v==="ok"}">對</button><button class="m-x" data-mark="x" data-id="${it.id}" aria-pressed="${v==="x"}">錯</button></span>
+        </li>`}).join("")}</ul>
+    </section>`).join("")}
+  <div class="next">
+    <p>${allMarked()?`標記完成！你錯了 <b>${wrongs().length}</b> 題。`:`還有 <b>${ALL.length-markedN()}</b> 題沒有標記。`}</p>
+    ${allMarked()
+      ? (wrongs().length?`<button class="btn big" data-go="2">下一步：看詳解訂正 →</button>`:`<p class="cheer">全部都對，太厲害了！不用訂正。</p>`)
+      : `<button class="btn ghost big" id="tofirst">跳到沒標記的題目</button>`}
+  </div>`;
+}
+
+/* ===================== ② 看詳解訂正 ===================== */
+function detailBody(it){
+  if(it.t==="mc"){
+    const btns=it.opts.map((o,i)=>`<span class="opt ${isAns(it,i)?"right":"dim"}">${esc(o)}${isAns(it,i)?'<span class="circle"></span>':""}</span>`).join("");
+    return `<div class="q">${it.q}</div><div class="opts ${it.long?"long":""}">${btns}</div><div class="ex"><h3>詳解</h3>${it.ex}</div>`;
+  }
+  if(it.t==="find"){
+    const cs=toks(it).map((c,i)=>i===it.w?`<span class="ch found ${c.length>1?"w":""}">${c}</span><span class="ch fixed w">${it.opts[it.a]}</span>`:`<span class="ch ${/^[，。、！？]$/.test(c)?"p":""} ${c.length>1?"w":""}">${c}</span>`).join("");
+    return `<div class="chars static">${cs}</div><p class="answer">「${toks(it)[it.w]}」要改成「<b>${it.opts[it.a]}</b>」</p><div class="ex"><h3>詳解</h3>${it.ex}</div>`;
+  }
+  if(it.t==="match"){
+    return `<ul class="pairs">${it.chars.map(c=>`<li><span class="pc">${c}</span><span class="pr">${it.ans[c]}</span><span class="ph">${it.hints[c]}</span></li>`).join("")}</ul><div class="ex"><h3>詳解</h3>${it.ex}</div>`;
+  }
+  const checks=(ST.ck||{})[it.id]||[];
+  return `<div class="q">${it.q}</div><div class="ex"><h3>參考答案</h3>${it.ans}</div>
+    <p class="step">對照你的考卷，想想看哪裡要改：</p>
+    <ul class="checks">${it.checks.map((c,i)=>`<li><label><input type="checkbox" id="${it.id}-c${i}" data-ck="${i}" data-id="${it.id}" ${checks[i]?"checked":""}>${c}</label></li>`).join("")}</ul>`;
+}
+function renderFix(){
+  const w=wrongs(), done=w.filter(it=>ST.fixed[it.id]).length;
+  main.innerHTML=`
+  <div class="intro"><h2>② 看詳解訂正</h2><p>這裡只有你錯的 ${w.length} 題。看完詳解，拿出訂正本把正確答案寫下來（錯字寫三遍），寫好了再按「我訂正好了」。</p></div>
+  ${w.map(it=>{const f=ST.fixed[it.id];return `
+    <article class="card ${f?"done":"wrong"}" id="c-${it.id}">
+      <div class="ctop"><span class="qno">${it.sec.no}、${it.sec.title}・${it.label}</span>${f?`<span class="badge">已訂正</span>`:""}</div>
+      ${it.sec.passage?`<details class="passage"><summary class="ptag">閱讀短文${PTITLE?"　〈"+PTITLE+"〉":""}（點開）</summary>${PASSAGE.map(p=>`<p>${p}</p>`).join("")}</details>`:""}
+      ${detailBody(it)}
+      <div class="fixrow"><span class="copy">抄到訂正本：<b>${esc(it.fix)}</b></span>
+        <button class="btn ${f?"ghost":"ok"}" data-fix="${it.id}">${f?"✓ 已訂正（點一下取消）":"我訂正好了"}</button></div>
+    </article>`}).join("")}
+  <div class="next">
+    <p>${done===w.length?`全部訂正好了！來看看你是不是真的會了。`:`已訂正 <b>${done}</b> / ${w.length} 題，全部訂正好才能開始測驗。`}</p>
+    ${done===w.length?`<button class="btn big" data-go="3">開始錯題總測驗 →</button>`:""}
+  </div>`;
+}
+
+/* ===================== ③ 錯題總測驗 ===================== */
+function asQ(it){
+  // 自己寫的題目，測驗時換成可以自動批改的類題
+  if(it.t==="self") return {...it,...it.test,t:"mc",fromSelf:true};
+  return it;
+}
+function buildQuiz(list){
+  quiz={list:list.map(it=>{
+    const q=asQ(it);
+    let order=null;
+    if(q.t==="mc"){ const keep=/^[①○✕]/.test(q.opts[0]); order= keep? q.opts.map((_,i)=>i) : shuffle(q.opts.map((_,i)=>i)); }
+    return {id:it.id,q,order,res:null,st:{}};
+  }), i:0};
+}
+function renderQuiz(){
+  if(!quiz) buildQuiz(wrongs());
+  const n=quiz.list.length;
+  if(quiz.i>=n) return renderResult();
+  const cur=quiz.list[quiz.i], q=cur.q, st=cur.st;
+  let body="", done=cur.res!==null;
+  if(q.t==="mc"){
+    const btns=cur.order.map(i=>{
+      let c="opt"; if(done){ c+= isAns(q,i)?" right":(i===st.pick?" no":" dim"); }
+      return `<button class="${c}" data-o="${i}" ${done?"disabled":""}>${esc(q.opts[i])}${done&&(cur.res?i===st.pick:i===q.a)?'<span class="circle"></span>':""}</button>`;
+    }).join("");
+    body=`<div class="q">${q.q}</div><div class="opts ${q.long?"long":""}">${btns}</div>`;
+  }else if(q.t==="find"){
+    const chars=toks(q);
+    const cs=chars.map((c,i)=>{
+      const p=/^[，。、！？]$/.test(c); let cls="ch"+(p?" p":"")+(c.length>1?" w":""), txt=c;
+      if(i===q.w && (st.found||done)) cls+= (done&&cur.res)?" fixed":" found";
+      if(done && cur.res && i===q.w) txt=q.opts[q.a];
+      if(st.badTap===i) cls+=" bad";
+      return `<button class="${cls}" data-c="${i}" ${p||st.found||done?"disabled":""}>${txt}</button>`;
+    }).join("");
+    let step2="";
+    if(st.found){
+      const btns=q.opts.map((o,i)=>{let c="opt"; if(done){ c+= i===q.a?" right":(i===st.pick?" no":" dim"); } return `<button class="${c}" data-o="${i}" ${done?"disabled":""}>${o}${done&&i===q.a?'<span class="circle"></span>':""}</button>`;}).join("");
+      step2=`<p class="step">② 要改成哪${q.toks?"一個語詞":"個字"}？</p><div class="opts">${btns}</div>`;
+    }
+    body=`${st.found||done?"":`<p class="step">① 點出${q.toks?"用錯的語詞":"寫錯的字"}</p>`}<div class="chars">${cs}</div>${step2}`;
+  }else if(q.t==="match"){
+    st.pairs=st.pairs||{}; st.miss=st.miss||0;
+    const used=Object.values(st.pairs);
+    const left=q.chars.map(c=>`<button class="mbtn ${st.pairs[c]?"done":""} ${st.sel===c?"sel":""}" data-mc="${c}" ${st.pairs[c]||done?"disabled":""}>${c}${st.pairs[c]?`<small>→ ${st.pairs[c]}</small>`:""}</button>`).join("");
+    const right=q.rads.map(r=>`<button class="mbtn ${used.includes(r)?"done":""}" data-mr="${r}" ${used.includes(r)||done?"disabled":""}>${r}</button>`).join("");
+    body=`<p class="step">${done?"":st.sel?`已選「${st.sel}」，再點它的部首`:"先點左邊一個字，再點右邊的部首（要全部連對才算答對）"}</p><div class="match"><div class="mcol"><h4>字</h4>${left}</div><div class="mcol"><h4>部首</h4>${right}</div></div>${st.miss&&!done?`<p class="hint">連錯 ${st.miss} 次，這題會算錯，但還是要連完喔。</p>`:""}`;
+  }
+  const passage = BY[cur.id].sec.passage ? `<div class="passage"><span class="ptag">閱讀短文${PTITLE?"　〈"+PTITLE+"〉":""}</span>${PASSAGE.map(p=>`<p>${p}</p>`).join("")}</div>`:"";
+  const fb = done ? `<div class="ex ${cur.res?"":"bad"}"><h3>${cur.res?"答對了！":"還不太熟，再看一次"}</h3>${q.ex}</div>` : "";
+  main.innerHTML=`
+    <div class="intro"><h2>③ 錯題總測驗</h2><p>這些是你考卷上錯的題目。不能看詳解，自己作答，每題只有一次機會。</p></div>
+    <div class="qhead"><span>第 <b>${quiz.i+1}</b> / ${n} 題</span><span>${BY[cur.id].sec.no}、${BY[cur.id].sec.title}${q.fromSelf?"（類題）":""}</span></div>
+    <div class="progress"><i style="width:${quiz.i/n*100}%"></i></div>
+    ${passage}
+    <article class="card quiz" id="qcard">${body}${fb}</article>
+    ${done?`<div class="next"><button class="btn big" id="qnext">${quiz.i===n-1?"看測驗結果":"下一題 →"}</button></div>`:""}`;
+  const nx=document.getElementById("qnext"); if(nx) nx.focus({preventScroll:true});
+}
+function renderResult(){
+  const n=quiz.list.length, ok=quiz.list.filter(x=>x.res).length, miss=quiz.list.filter(x=>!x.res);
+  const score=`${ok} / ${n}`;
+  ST.last={ok,n,time:Date.now()};
+  if(!ST.bestN || ok/n > ST.bestN){ ST.bestN=ok/n; ST.best=score; }
+  save();
+  const word= ok===n?"全部會了":ok/n>=.7?"快好了":"再加油";
+  main.innerHTML=`
+    <div class="result">
+      <div class="intro"><h2>錯題總測驗結果</h2></div>
+      <div class="scorecard">
+        ${ST.seat?`<p class="who">${esc(ST.seat)} 號</p>`:""}
+        <div class="stamp">${word}</div>
+        <p class="big">答對 ${ok} / ${n} 題</p>
+        <p class="sub">做完拿給老師看這個畫面</p>
+      </div>
+      ${miss.length?`<div class="wronglist"><h3>還要再練的 ${miss.length} 題</h3>${miss.map(x=>{const it=BY[x.id];return `<div class="witem"><p><b>${it.sec.no}、${it.label}</b>　${esc(shortQ(it))}</p><p class="ans">抄到訂正本：${esc(it.fix)}</p></div>`}).join("")}</div>`:`<p class="cheer">錯的題目全部都會了，訂正完成！</p>`}
+      <div class="actions">
+        ${miss.length?`<button class="btn big" id="again">再測一次答錯的 ${miss.length} 題</button>`:""}
+        <button class="btn ghost" id="all">全部錯題重新測驗</button>
+        <button class="btn ghost" data-go="2">回去看詳解</button>
+      </div>
+    </div>`;
+  paintBar();
+}
+
+/* ===================== 互動 ===================== */
+main.addEventListener("click",e=>{
+  const g=e.target.closest("[data-go]"); if(g){ go(+g.dataset.go); return; }
+  if(stage===1){
+    const mk=e.target.closest("[data-mark]");
+    if(mk){ const id=mk.dataset.id; ST.m[id]= ST.m[id]===mk.dataset.mark?undefined:mk.dataset.mark; if(ST.m[id]!=="x") delete ST.fixed[id]; save(); const y=scrollY; render(); scrollTo(0,y); return; }
+    const al=e.target.closest("[data-allok]");
+    if(al){ SECTIONS.find(s=>s.no===al.dataset.allok).items.forEach(it=>{ ST.m[it.id]="ok"; delete ST.fixed[it.id]; }); save(); const y=scrollY; render(); scrollTo(0,y); return; }
+    if(e.target.id==="tofirst"){ const it=ALL.find(it=>!ST.m[it.id]); const r=document.getElementById("r-"+it.id); if(r){ r.scrollIntoView({block:"center"}); r.classList.add("flash"); setTimeout(()=>r.classList.remove("flash"),1200);} return; }
+    return;
+  }
+  if(stage===2){
+    const f=e.target.closest("[data-fix]");
+    if(f){ const id=f.dataset.fix; ST.fixed[id]=!ST.fixed[id]; save(); const y=scrollY; render(); scrollTo(0,y); }
+    return;
+  }
+  if(stage===3){
+    if(e.target.id==="qnext"){ quiz.i++; render(); scrollTo(0,0); return; }
+    if(e.target.id==="again"){ buildQuiz(quiz.list.filter(x=>!x.res).map(x=>BY[x.id])); render(); scrollTo(0,0); return; }
+    if(e.target.id==="all"){ buildQuiz(wrongs()); render(); scrollTo(0,0); return; }
+    if(!quiz || quiz.i>=quiz.list.length) return;
+    const cur=quiz.list[quiz.i], q=cur.q, st=cur.st;
+    if(cur.res!==null) return;
+    if(q.t==="mc"){ const b=e.target.closest("[data-o]"); if(!b) return; st.pick=+b.dataset.o; cur.res= isAns(q,st.pick); render(); return; }
+    if(q.t==="find"){
+      const c=e.target.closest("[data-c]");
+      if(c && !st.found){ const i=+c.dataset.c; if(i===q.w){ st.found=true; } else { st.badTap=i; st.found=true; cur.res=false; } render(); return; }
+      const b=e.target.closest("[data-o]"); if(b){ st.pick=+b.dataset.o; cur.res= st.pick===q.a && st.badTap===undefined; render(); }
+      return;
+    }
+    if(q.t==="match"){
+      const l=e.target.closest("[data-mc]"), r=e.target.closest("[data-mr]");
+      if(l){ st.sel=l.dataset.mc; render(); return; }
+      if(r && st.sel){
+        const good=q.ans[st.sel]===r.dataset.mr;
+        if(good){ st.pairs[st.sel]=r.dataset.mr; st.sel=undefined; if(Object.keys(st.pairs).length===q.chars.length) cur.res= st.miss===0; }
+        else { st.miss=(st.miss||0)+1; }
+        render(); if(!good){ const n=document.querySelector(`[data-mr="${r.dataset.mr}"]`); if(n) n.classList.add("bad"); }
+      }
+    }
+  }
+});
+main.addEventListener("change",e=>{
+  const ck=e.target.closest("[data-ck]");
+  if(ck){ ST.ck=ST.ck||{}; const a=ST.ck[ck.dataset.id]=ST.ck[ck.dataset.id]||[]; a[+ck.dataset.ck]=ck.checked; save(); }
+});
+main.addEventListener("input",e=>{ if(e.target.id==="seat"){ ST.seat=e.target.value.trim(); save(); } });
+document.getElementById("restart").addEventListener("click",e=>{
+  const b=e.currentTarget;
+  if(b.dataset.sure){ ST={m:{},fixed:{}}; save(); quiz=null; stage=1; render(); scrollTo(0,0); b.textContent="清除紀錄，從頭開始"; delete b.dataset.sure; return; }
+  b.dataset.sure="1"; b.textContent="真的要清除嗎？再點一次確定"; setTimeout(()=>{ delete b.dataset.sure; b.textContent="清除紀錄，從頭開始"; },3000);
+});
+
+/* ===================== QR code ===================== */
+function defaultURL(){
+  const h=location.hostname||"";
+  const hosted=/^https?:$/.test(location.protocol) && !/claude|anthropic|localhost|127\.0\.0\.1/.test(h);
+  return (hosted ? location.href.split("#")[0] : ARTIFACT_URL) + "#l" + CUR;
+}
+function qrURL(){ let c=null; try{ c=localStorage.getItem("qr-url-exam"); }catch(e){} return c ? c.split("#")[0]+"#l"+CUR : defaultURL(); }
+let lastFocus=null;
+function drawQR(url){
+  const box=document.getElementById("qrcode");
+  document.getElementById("qrurl").textContent=url;
+  const cs=getComputedStyle(document.documentElement);
+  try{
+    const q=qrcode(0,"M"); q.addData(url); q.make();
+    const n=q.getModuleCount(); let d="";
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${c} ${r}h1v1h-1z`;
+    const dark=cs.getPropertyValue("--qr-dark").trim()||"#000", light=cs.getPropertyValue("--qr-light").trim()||"#fff";
+    box.innerHTML=`<svg viewBox="-2 -2 ${n+4} ${n+4}" shape-rendering="crispEdges" role="img" aria-label="QR code：${esc(url)}"><rect x="-2" y="-2" width="${n+4}" height="${n+4}" fill="${light}"/><path d="${d}" fill="${dark}"/></svg>`;
+  }catch(e){ box.innerHTML='<p style="line-height:1.6;color:#000">網址太長，無法做成 QR code。請學生直接輸入下方網址。</p>'; }
+}
+function openQR(){ document.getElementById("qrl").textContent=`第${NUM[CUR-1]}課〈${LESSONS[CUR].name}〉`; lastFocus=document.activeElement; const u=qrURL(); document.getElementById("qrinput").value=u; drawQR(u); document.getElementById("qr").hidden=false; document.getElementById("qrclose").focus(); }
+function closeQR(){ document.getElementById("qr").hidden=true; if(lastFocus) lastFocus.focus(); }
+document.getElementById("showqr").onclick=openQR;
+document.getElementById("qrclose").onclick=closeQR;
+document.getElementById("qr").addEventListener("click",e=>{ if(e.target.id==="qr") closeQR(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !document.getElementById("qr").hidden) closeQR(); });
+document.getElementById("qrsave").onclick=()=>{ let v=document.getElementById("qrinput").value.trim(); if(!v) return; if(!/^https?:\/\//.test(v)) v="https://"+v; try{ localStorage.setItem("qr-url-exam",v); }catch(e){} document.getElementById("qrinput").value=v; drawQR(v); };
+document.getElementById("qrreset").onclick=()=>{ try{ localStorage.removeItem("qr-url-exam"); }catch(e){} const v=defaultURL(); document.getElementById("qrinput").value=v; drawQR(v); };
+
+(function(){
+  let n=0; const m=/^#l([1-6])$/.exec(location.hash||"");
+  if(m && LESSONS[+m[1]]) n=+m[1];
+  if(!n){ try{ const v=+localStorage.getItem("exam-review-last"); if(LESSONS[v]) n=v; }catch(e){} }
+  load(n||1);
+})();
+render();
+</script>
+</body>
+</html>
