@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>自然段與意義段</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+@font-face{font-family:"EduKai";src:local("TW-MOE-Std-Kai"),local("教育部標準楷書"),url("fonts/edukai-4.0.woff2") format("woff2");font-display:swap}
+/* Layout: 綠格稿紙當底；上方標題＋QR，三個分頁：認識段落／動手分段／小測驗。段落用「稿紙」樣式呈現，空兩格看得見 */
+:root{
+  --bg:#f5f9f6; --paper:#ffffff; --ink:#1c2925; --muted:#5b6d66; --line:#d3e4da; --grid:#e4efe8;
+  --accent:#23744f; --accent-ink:#ffffff; --accent-soft:#e2f1e8;
+  --mark:#ffe27a; --mark-ink:#1c2925;
+  --ok:#1f7a45; --ok-soft:#e1f4e7; --bad:#b4362c; --bad-soft:#fbe7e4;
+  --g1:#e8710a; --g2:#1f8a5b; --g3:#d6336c; --g4:#3b6fd1;
+  --g1s:#fdebd9; --g2s:#dff3e8; --g3s:#fbe1ea; --g4s:#e2eafb;
+  --f-display:"EduKai","LXGW WenKai TC","BiauKai","DFKai-SB","KaiTi","Noto Serif TC",serif;
+  --f-body:"EduKai","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111916; --paper:#18221e; --ink:#e4eee8; --muted:#9db1a8; --line:#2b3d35; --grid:#1c2924;
+  --accent:#5fc493; --accent-ink:#0d1512; --accent-soft:#1d3329;
+  --mark:#6e5a10; --mark-ink:#fff6cf;
+  --ok:#6fd398; --ok-soft:#173326; --bad:#ff8f84; --bad-soft:#3a1d1a;
+  --g1:#ffa45c; --g2:#5fd09a; --g3:#f383a8; --g4:#86a8f0;
+  --g1s:#3a2a1a; --g2s:#173326; --g3s:#3a1c27; --g4s:#1c2740;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111916; --paper:#18221e; --ink:#e4eee8; --muted:#9db1a8; --line:#2b3d35; --grid:#1c2924;
+  --accent:#5fc493; --accent-ink:#0d1512; --accent-soft:#1d3329;
+  --mark:#6e5a10; --mark-ink:#fff6cf;
+  --ok:#6fd398; --ok-soft:#173326; --bad:#ff8f84; --bad-soft:#3a1d1a;
+  --g1:#ffa45c; --g2:#5fd09a; --g3:#f383a8; --g4:#86a8f0;
+  --g1s:#3a2a1a; --g2s:#173326; --g3s:#3a1c27; --g4s:#1c2740;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.7;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+.wrap{max-width:900px;margin:0 auto;padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+.brand{min-width:0}
+.eyebrow{font-size:13px;letter-spacing:.12em;color:var(--accent);font-weight:700}
+h1{font-family:var(--f-display);font-size:clamp(28px,6vw,40px);line-height:1.2;margin:4px 0 6px;text-wrap:balance}
+.sub{color:var(--muted);margin:0;font-size:15px}
+.qr{flex:none;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.qr #qrSmall{width:76px;height:76px}
+.qr #qrSmall img,.qr #qrSmall canvas{width:76px!important;height:76px!important}
+.qr span{font-size:11px;color:#3d4f48}
+button:focus-visible,.qr:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:8px;margin:22px 0 14px;flex-wrap:wrap}
+.tab{font:inherit;font-weight:700;font-size:17px;border:2px solid var(--accent);background:var(--paper);color:var(--accent);border-radius:999px;padding:8px 20px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.panel{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.card h2{font-family:var(--f-display);font-size:25px;margin:0 0 6px}
+.card h3{font-family:var(--f-display);font-size:20px;margin:0 0 4px}
+.card p{margin:6px 0}
+.key{background:var(--mark);color:var(--mark-ink);border-radius:4px;padding:0 4px;font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:680px){.two{grid-template-columns:1fr}}
+
+/* 稿紙示意 */
+.sheet{font-family:var(--f-display);font-size:19px;line-height:2;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--bg);margin-top:10px}
+.sheet p{margin:0;text-indent:2em;position:relative}
+.sheet .ind{position:absolute;left:0;top:.35em;width:2em;height:1.3em;border:2px dashed var(--accent);border-radius:4px}
+.sheet .ind::after{content:"空兩格";position:absolute;left:0;top:-1.25em;font-family:var(--f-body);font-size:11px;color:var(--accent);white-space:nowrap;line-height:1}
+.sheet p+p{margin-top:12px}
+.lab2{display:inline-block;margin-left:8px;font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:0 8px;text-indent:0;vertical-align:2px}
+
+/* 合併動畫 */
+.merge{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px;align-items:stretch}
+.blk{width:44px;height:52px;border-radius:6px;border:2px solid var(--line);background:var(--paper);display:grid;place-items:center;font-family:var(--f-display);font-size:18px;font-weight:700;transition:background .5s,border-color .5s,margin .5s,transform .5s}
+.merge.on .blk{border-color:var(--gc);background:var(--gcs)}
+.merge.on .blk.first:not(:first-child){margin-left:16px}
+.merge .tagrow{display:none}
+.mergetags{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;min-height:28px}
+.mtag{font-size:14px;font-weight:700;color:var(--gc);border:1.5px solid var(--gc);border-radius:999px;padding:0 10px;opacity:0;transition:opacity .4s}
+.merge.on ~ .mergetags .mtag{opacity:1}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:9px 22px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:2px solid var(--accent)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+@media (max-width:680px){.steps{grid-template-columns:1fr}}
+.step{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.step b{display:block;color:var(--accent)}
+.step .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:13px;margin-right:6px}
+
+/* 動手分段 */
+.story{font-family:var(--f-display);font-size:19px;line-height:1.9}
+.para{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding:8px 10px;border-radius:8px;border-left:5px solid transparent;transition:background .3s,border-color .3s}
+.para .no{font-family:var(--f-body);font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:4px;height:24px;display:grid;place-items:center;margin-top:6px;background:var(--paper)}
+.para p{margin:0;text-indent:2em}
+.para.g1{background:var(--g1s);border-color:var(--g1)}.para.g2{background:var(--g2s);border-color:var(--g2)}
+.para.g3{background:var(--g3s);border-color:var(--g3)}.para.g4{background:var(--g4s);border-color:var(--g4)}
+.picker{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 6px}
+.pk{font:inherit;font-size:16px;font-weight:700;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer;text-align:left;line-height:1.3}
+.pk small{display:block;font-size:12px;font-weight:500;color:var(--muted)}
+.pk[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.story h3.ttl{text-align:center;font-size:24px;margin:0 0 8px}
+.cut{display:flex;align-items:center;gap:8px;margin:2px 0;padding-left:54px}
+.cut button{font:inherit;font-size:13px;color:var(--muted);background:transparent;border:1px dashed var(--line);border-radius:999px;padding:1px 12px;cursor:pointer}
+.cut button:hover{border-color:var(--accent);color:var(--accent)}
+.cut.on button{border:2px solid var(--accent);color:var(--accent);font-weight:700;background:var(--paper)}
+.cut .rule{flex:1;height:0;border-top:2px dashed transparent}
+.cut.on .rule{border-top-color:var(--accent)}
+.status{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.status b{font-size:20px;color:var(--accent)}
+table.res{width:100%;border-collapse:collapse;margin-top:8px;font-size:15px}
+.tblwrap{overflow-x:auto}
+table.res th,table.res td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.res th{background:var(--accent-soft)}
+table.res td.s{font-family:var(--f-display);font-size:17px}
+.pill{display:inline-block;font-size:13px;font-weight:700;border-radius:999px;padding:0 10px;color:var(--gc);border:1.5px solid var(--gc);white-space:nowrap}
+.hintbox{background:var(--bg);border:1.5px dashed var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px}
+.hintbox b{color:var(--accent)}
+.hints{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
+.hc{border-radius:8px;border-top:5px solid var(--gc);background:var(--paper);padding:6px 10px;font-size:15px;line-height:1.5}
+.hc .pt{display:block;font-weight:700;color:var(--gc)}
+.why2{font-family:var(--f-body);font-size:13px;color:var(--muted);margin-top:4px}
+.note{font-size:14px;color:var(--muted);background:var(--bg);border-radius:6px;padding:8px 12px}
+
+/* 測驗 */
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.progress{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:22px;height:8px;border-radius:4px;background:var(--line)}
+.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}.dot.now{background:var(--accent);opacity:.5}
+.qtype{font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em}
+.qtext{font-family:var(--f-display);font-size:22px;line-height:1.8;margin:8px 0 14px}
+.passage{font-family:var(--f-display);font-size:17px;line-height:1.8;background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:10px}
+.passage p{margin:0 0 4px;text-indent:2em}
+.passage summary{font-family:var(--f-body);font-size:14px;color:var(--accent);font-weight:700;cursor:pointer}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.opts{grid-template-columns:1fr}}
+.opt{font:inherit;font-size:18px;font-family:var(--f-display);text-align:left;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;gap:10px;align-items:center}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--bg);font-family:var(--f-body);font-size:14px;font-weight:700}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+.feedback{margin-top:14px;border-radius:8px;padding:10px 14px;font-size:15px}
+.feedback.ok{background:var(--ok-soft);color:var(--ok)}
+.feedback.bad{background:var(--bad-soft);color:var(--bad)}
+.feedback .why{color:var(--ink);display:block;margin-top:4px}
+.score{font-family:var(--f-display);font-size:56px;color:var(--accent);line-height:1;margin:10px 0}
+.review .item{border-left:4px solid var(--bad);padding:6px 12px;background:var(--bg);border-radius:0 6px 6px 0;font-size:15px;margin-top:8px}
+.overlay{position:fixed;inset:0;background:rgba(10,20,16,.7);display:grid;place-items:center;z-index:50;padding:20px}
+.overlay .inner{background:#fff;border-radius:16px;padding:22px;text-align:center;color:#1c2925;max-width:92vw}
+.overlay #qrBig{width:min(320px,70vw);height:min(320px,70vw);margin:0 auto}
+.overlay #qrBig img,.overlay #qrBig canvas{width:100%!important;height:100%!important}
+.overlay p{font-family:var(--f-display);font-size:22px;margin:12px 0 0}
+
+/* 課堂練習 */
+.stepper{display:flex;gap:6px;flex-wrap:wrap}
+.stepper span{font-size:14px;font-weight:700;border-radius:999px;padding:2px 12px;border:1.5px solid var(--line);color:var(--muted)}
+.stepper span.on{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.stepper span.done{border-color:var(--accent);color:var(--accent)}
+.dhint{font-size:18px;margin:10px 0 0}
+.story.big{font-size:22px;line-height:2}
+.story.big h3{text-align:center;font-size:26px;margin:0 0 6px}
+.dp{position:relative;border-radius:8px;border-left:5px solid transparent;padding:4px 10px 4px 52px;transition:background .3s,border-color .3s}
+.dp p{margin:0;text-indent:2em}
+.dp .no{position:absolute;left:8px;top:10px;font-family:var(--f-body);font-size:14px;font-weight:700;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;width:34px;text-align:center;line-height:24px;opacity:0;transition:opacity .3s}
+.dp .ind{position:absolute;left:52px;top:12px;width:2em;height:1.4em;border:2px dashed var(--accent);border-radius:4px;opacity:0;transition:opacity .3s}
+.s-count .dp .no,.s-count .dp .ind{opacity:1}
+.s-group .dp .no{opacity:1}
+.dp.g1{background:var(--g1s);border-color:var(--g1)}.dp.g2{background:var(--g2s);border-color:var(--g2)}.dp.g3{background:var(--g3s);border-color:var(--g3)}.dp.g4{background:var(--g4s);border-color:var(--g4)}
+.dcount{text-align:center;font-family:var(--f-body);font-size:18px;font-weight:700;color:var(--accent);margin-top:8px}
+.dsum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:620px){.dsum{grid-template-columns:1fr}}
+.sc{background:var(--paper);border:1px solid var(--line);border-top:6px solid var(--gc);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:6px;text-align:left;font:inherit;color:var(--ink)}
+button.sc{cursor:pointer}
+.sc .pt{font-weight:700;color:var(--gc)}
+.sc .sm{font-family:var(--f-display);font-size:20px;line-height:1.6}
+.sc .rg{font-size:18px;font-weight:700}
+.sc .rg b{display:inline-block;min-width:3.5em;text-align:center;border-bottom:2px solid var(--gc);color:var(--gc)}
+.sc .why{font-size:14px;color:var(--muted)}
+.pn{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">國語三上・第五課 火大了</div>
+      <h1>自然段與意義段</h1>
+      <p class="sub">先認識兩種段落，再動手把〈火大了〉分段，最後做小測驗。</p>
+    </div>
+    <div class="qr" id="qrBtn" role="button" tabindex="0" aria-label="放大 QR code" hidden><div id="qrSmall"></div><span>掃我練習</span></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t1" aria-selected="true">認識段落</button>
+    <button class="tab" role="tab" id="t2" aria-selected="false">動手分段</button>
+    <button class="tab" role="tab" id="t4" aria-selected="false">課堂練習：豆豆的球</button>
+    <button class="tab" role="tab" id="t3" aria-selected="false">小測驗</button>
+  </nav>
+
+  <!-- 認識段落 -->
+  <section class="panel" id="p1">
+    <div class="two">
+      <div class="card">
+        <h2>自然段</h2>
+        <p>閱讀文章時，每個段落開始的第一行<span class="key">空下兩格</span>，就能清楚分出「自然段」。</p>
+        <p>自然段由<b>一到數個句子</b>組成，句子互相連貫，呈現一個比較完整的意思。</p>
+        <div class="sheet" aria-label="自然段示意">
+          <p><span class="ind" aria-hidden="true"></span>小噴火龍<u class=pn>丁丁</u>最受不了的事，是找不到東西。</p>
+          <p><span class="ind" aria-hidden="true"></span>「一定是哥哥做的好事，拿走我的玩具車！」……</p>
+        </div>
+        <p class="note" style="margin-top:10px">數自然段的方法：找「空兩格」的地方，有幾個就有幾段。</p>
+      </div>
+      <div class="card">
+        <h2>意義段</h2>
+        <p>如果文章內容很長，或寫了很多人物的對話，就會有<b>很多自然段</b>。</p>
+        <p>為了讀懂作者想表達的重點，可以把<span class="key">幾個重點相同的自然段合在一起</span>，看成同一個「意義段」。</p>
+        <p class="note">一個意義段，可以只有一個自然段，也可以有好幾個自然段。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>為什麼對話會讓自然段變多？</h3>
+      <p>寫故事時，<span class="key">換一個人說話，通常就要另起一段</span>。所以人物的對話寫得越多，自然段就越多，有的自然段甚至只有一句話。</p>
+      <p>看看〈火大了〉的第六到第八自然段，三段其實只在說一件事：</p>
+      <div class="sheet" aria-label="對話分段示意">
+        <p><span class="ind" aria-hidden="true"></span>「你們知道管不住怒火的噴火龍，會變成什麼樣嗎？」消防員問。<span class="lab2">第六段・消防員說話</span></p>
+        <p><span class="ind" aria-hidden="true"></span>兩兄弟搖搖頭。<span class="lab2">第七段・兩兄弟回應</span></p>
+        <p><span class="ind" aria-hidden="true"></span>「會氣到全身著火，不幸傷重而死。」消防員接著說。<span class="lab2">第八段・消防員說話</span></p>
+      </div>
+      <p class="note" style="margin-top:10px">這三段的重點都是「消防員告訴兩兄弟生氣的後果」，所以可以合在同一個意義段。遇到一連串的對話，先想想：他們在談同一件事嗎？</p>
+    </div>
+
+    <div class="card">
+      <h3>看一看：〈火大了〉有 11 個自然段，可以合成 4 個意義段</h3>
+      <div class="merge" id="merge"></div>
+      <div class="mergetags" id="mergetags"></div>
+      <div class="actions"><button class="btn" id="mergeBtn">合併成意義段</button></div>
+    </div>
+
+    <div class="card">
+      <h3>分意義段的三個步驟</h3>
+      <div class="steps">
+        <div class="step"><b><span class="n">1</span>數一數</b>找空兩格的地方，替每個自然段編號。</div>
+        <div class="step"><b><span class="n">2</span>想一想</b>每一段在說誰？發生什麼事？用一句話說說看。</div>
+        <div class="step"><b><span class="n">3</span>合起來</b>把意思相近的自然段合在一起。故事常常可以分成「起因、經過、結果」。</div>
+      </div>
+      <div class="actions"><button class="btn" id="goPractice">換我動手分段</button></div>
+    </div>
+  </section>
+
+  <!-- 動手分段 -->
+  <section class="panel" id="p2" hidden>
+    <div class="card">
+      <h2 id="pTitle">動手分意義段</h2>
+      <div class="picker" id="pPick" role="tablist" aria-label="選一篇文章"></div>
+      <p>先讀完整篇，看著下面的提示，在你覺得「重點換了」的地方，按下 <b>✂ 在這裡分段</b>。再按一次可以取消。分好後，按「對照答案」。</p>
+      <div class="hintbox" id="hintBox"></div>
+    </div>
+    <div class="status"><span>你分成了 <b id="cnt">1</b> 個意義段</span>
+      <span class="actions" style="margin:0"><button class="btn ghost" id="resetCut">重來</button><button class="btn" id="checkCut">對照答案</button></span></div>
+    <div class="card story" id="story"></div>
+    <div class="card" id="result" hidden></div>
+  </section>
+
+  <!-- 課堂練習 -->
+  <section class="panel" id="p4" hidden>
+    <div class="status"><span id="dStepLabel"></span>
+      <span class="actions" style="margin:0"><button class="btn ghost" id="dPrev">上一步</button><button class="btn" id="dNext">下一步</button></span></div>
+    <div class="card"><div class="stepper" id="dSteps"></div><p class="dhint" id="dHint"></p></div>
+    <div class="card story big" id="dStory"></div>
+    <div class="dsum" id="dSum"></div>
+  </section>
+
+  <!-- 小測驗 -->
+  <section class="panel" id="p3" hidden></section>
+  <footer style="margin-top:28px;font-size:13px;color:var(--muted);text-align:center">字型：教育部標準楷書（中華民國教育部，CC BY-ND 3.0 臺灣）</footer>
+</div>
+
+<div class="overlay" id="overlay" hidden><div class="inner"><div id="qrBig"></div><p>用平板或手機掃描，一起來練習！</p></div></div>
+
+<script>window.QRCode=function(el){el.innerHTML='<img alt="QR code" style="image-rendering:pixelated" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAV4AAAFeAQAAAADlUEq3AAAC7ElEQVR4Xu1bW27jMAykagP9TG7Qo9g3W+zNnKPkBsnnAjFYkEPKSvdjIwRxuSj5UTi14AgaDzl8pDA9bOvbw0uJKBe39rrTIF78i3ihgXk5MDNfiOwP3/z+4fa6beSTn4FbIVOgDjei6WLPKjMNTKejYCm2JK3uLdBbt5ZSjrK760gF9qHMWwv2fCpFrwLt+WH7UXsW+vEiRKTru8THgcsvp2Qi+NWCvBtjs6/TPOATV/rd65wge85t3JlJF75JuLNgqFd6gybckDiYSiZqHLxq5BsJqkWlqVxpHOTfR7LYOGccDImgEQx2GRD9aGJmk6Z2S+Vquq9nNP/j1nXO5izNBs8rHEbPEeFeu56ci/eBuybuiHSWD0r0AxGVg+JZk4NBtaghuIEH+mlegSup0+jmk4Oh46CGQBTUxJXKR9BPeQlKphfdyTF2BSCrhm7lTyGdg9fKmUQwsBd18elUQ4VU5acBqrxMDgbloDlQy+jbGrdn+RCkiWBcBEkUqDaWpBIjulNbTPoRYRElmoyDEePgKB5zZKI/haazVEkPWy1bukszSVtCVWl2eCMiaGU00y9GOmsSgoPWr0gOhvWiaCc5Wlsev6Fa205dKjcX71aT2boP8pWazEOGej6IjD7zwchKBgq0ZhMox2iCjxaT6Zyk1T606jpnn29CKdsCn2eBul/rV2Q2EZaDljRULFFGs4E1aBpvNnW9G7l4H8J6K35L+3TkEKVsD4buYxOUfUDpOufqRT2tb0ctpC4Ky5rM39Z1zq9b3PboUZPxerZPxzQNitdtI5/8BLtlGFTNxwtXVGd0dqbMdWg050VjZhNv1hXEcP1a6FRkVBRs1P+JFr2OmhQmU55gSod1nbMD5Q60ETGqZGDmSruenIu/A25xoGhVmCu1UYtzKTltGNeLVpvO7yxAue+sdvoAG5NW30Grf1k7s42ppq0h6Gm9udL0okER9G1ZIlE5uI39+g/UkoMBOVjyN7yN/Y+v6CegzYpo5iVCFgAAAABJRU5ErkJggg==">'};QRCode.CorrectLevel={M:0};</script>
+<script>
+const SHARE_URL = "https://teacher-liujikan.github.io/chinese-grade3/paragraphs/";
+const $ = id => document.getElementById(id);
+const NUM = ["一","二","三","四","五","六","七","八","九","十","十一"];
+const STORY = [
+  "小噴火龍<u class=pn>丁丁</u>最受不了的事，是找不到東西。",
+  "「一定是哥哥做的好事，拿走我的玩具車！」<u class=pn>丁丁</u>肚子裡的怒火慢慢升高，朝哥哥大喊：「把玩具車還給我！」什麼也沒做的哥哥聽了很不開心，氣呼呼的說：「沒有就是沒有，誰要拿你的東西！」",
+  "氣得跳腳的<u class=pn>丁丁</u>踢倒了桌椅，怒氣沖天的哥哥噴了幾口氣。他們身體變大，火力全開，你一言，我一語，朝著對方噴出烈火。他們頭頂上的龍角變成「菱角」，白牙變成黑牙，臉也烏黑一片。",
+  "兩兄弟一吐怒氣後，變大的身體才慢慢消下來。",
+  "轉眼間，屋子裡的東西東倒西歪，消防警鈴大響。消防車快速趕來，水柱注入屋子，從沙發下沖出了好多玩具車。",
+  "「你們知道管不住怒火的噴火龍，會變成什麼樣嗎？」消防員問。",
+  "兩兄弟搖搖頭。",
+  "「會氣到全身著火，不幸傷重而死。」消防員接著說。",
+  "<u class=pn>丁丁</u>冷靜想一想，轉身向哥哥說：「我不該隨便生氣，對不起！」",
+  "「不要緊，我原諒你。」哥哥回答。",
+  "<u class=pn>丁丁</u>告訴自己，下次可以請人幫忙找一找，也許不用發脾氣。"
+];
+// 課本的分法：每個意義段的起訖自然段
+const GROUPS = [
+  {from:1,to:2,part:"起因",sum:"<u class=pn>丁丁</u>以為哥哥拿走他的玩具車，朝哥哥大喊，結果他們都生氣了。"},
+  {from:3,to:4,part:"經過一",sum:"<u class=pn>丁丁</u>踢倒桌椅，哥哥噴了幾口氣，他們朝著對方噴出烈火。"},
+  {from:5,to:8,part:"經過二",sum:"東西東倒西歪，消防警鈴大響，消防員趕來滅火，並告訴兩兄弟噴火龍生氣的後果。"},
+  {from:9,to:11,part:"結果",sum:"<u class=pn>丁丁</u>向哥哥賠不是。下次找不到東西，他會先請人幫忙，也許不用發脾氣。"}
+];
+const gOf = n => GROUPS.findIndex(g=>n>=g.from&&n<=g.to)+1;
+const PN = n => `<u class=pn>${n}</u>`;
+const PASSAGES = [
+ {title:"火大了", tag:"課文・11 段", paras:STORY, groups:GROUPS, src:"課本",
+  cues:["丁丁以為哥哥拿走玩具車","兩兄弟吵架、噴火","消防員趕來滅火","丁丁向哥哥道歉"]},
+ {title:"第一次搭公車", tag:"練習一・9 段", src:"參考答案",
+  paras:[
+   `${PN("佳佳")}今年升上三年級了，媽媽答應她，星期六可以自己搭公車去外婆家。`,
+   `出門前，媽媽把悠遊卡放進她的口袋，叮嚀她：「上車要刷卡，聽到『市場站』再按下車鈴。」`,
+   `「我知道了！」${PN("佳佳")}點點頭，背起小背包出門了。`,
+   `公車來了，${PN("佳佳")}刷了卡，找了一個靠窗的位子坐下。窗外的街道一條條往後跑，她緊張得一直盯著車上的跑馬燈。`,
+   `「下一站，市立醫院。」廣播一響，${PN("佳佳")}以為聽到了「市場」，趕緊按下車鈴。`,
+   `下車後，她發現四周的房子都很陌生，原來自己提早一站下車了。${PN("佳佳")}急得眼眶都紅了。`,
+   `這時，一位賣水果的阿姨走過來問：「小妹妹，妳要去哪裡？」${PN("佳佳")}說出外婆家的地址，阿姨就親切的帶她走過一條街。`,
+   `遠遠的，${PN("佳佳")}就看見外婆站在門口向她揮手。她開心的跑過去，緊緊抱住外婆。`,
+   `回家後，${PN("佳佳")}把這段經過告訴媽媽。她說，下次一定要仔細聽清楚站名再下車。`],
+  groups:[
+   {from:1,to:3,part:"起因",sum:`${PN("佳佳")}第一次要自己搭公車去外婆家，媽媽叮嚀她要在市場站下車。`,why:"第一到三段都在說「出門前」的事：媽媽答應、叮嚀，佳佳出門。"},
+   {from:4,to:5,part:"經過一",sum:`${PN("佳佳")}在公車上很緊張，把「市立醫院」聽成「市場」，按了下車鈴。`,why:"第四、五段的地點都在公車上，重點是她聽錯站名。"},
+   {from:6,to:7,part:"經過二",sum:`${PN("佳佳")}提早一站下車迷了路，賣水果的阿姨帶她去外婆家。`,why:"第六段迷路、第七段有人幫忙，都是下錯站之後發生的事。"},
+   {from:8,to:9,part:"結果",sum:`${PN("佳佳")}平安到了外婆家，也學會下次要聽清楚站名。`,why:"第八段到達外婆家，第九段想到下次要注意，是故事的結果。"}],
+  cues:["出門前，媽媽叮嚀","在公車上聽錯站名","下錯站，有人幫忙","到了外婆家"]},
+ {title:"教室裡的小金魚", tag:"練習二・9 段", src:"參考答案",
+  paras:[
+   `我們班的教室後面有一個小魚缸，裡面住著兩隻紅色的小金魚。`,
+   `這個星期輪到${PN("阿哲")}照顧小金魚。他每天一到學校，就先去看看魚缸。`,
+   `星期三早上，${PN("阿哲")}發現其中一隻金魚浮在水面上，一動也不動。`,
+   `「老師！小金魚怎麼了？」${PN("阿哲")}大聲喊。`,
+   `老師走過來看了看，說：「水太髒了，牠可能生病了。」`,
+   `大家趕快一起幫忙。有人去拿水桶，有人把魚撈到乾淨的臉盆裡，${PN("阿哲")}則小心的把魚缸刷洗乾淨。`,
+   `換了新水以後，那隻金魚慢慢擺動尾巴，又游了起來。`,
+   `全班都鬆了一口氣，忍不住拍手歡呼。`,
+   `從那天起，${PN("阿哲")}在白板旁貼了一張換水表，每三天就提醒大家換一次水。`],
+  groups:[
+   {from:1,to:2,part:"開頭",sum:`教室裡有兩隻小金魚，這星期由${PN("阿哲")}負責照顧。`,why:"第一、二段在介紹小金魚和照顧牠的人，還沒有發生事情。"},
+   {from:3,to:5,part:"起因",sum:`${PN("阿哲")}發現一隻金魚浮在水面上，老師說是水太髒讓牠生病了。`,why:"第四、五段是對話，換人說話就分段，但三到五段都在說「發現金魚生病」。"},
+   {from:6,to:7,part:"經過",sum:"大家一起換水、刷魚缸，金魚又游了起來。",why:"第六段大家動手幫忙，第七段金魚好起來，都是「救金魚」的過程。"},
+   {from:8,to:9,part:"結果",sum:`全班開心歡呼，${PN("阿哲")}也做了換水表提醒大家。`,why:"第八、九段寫事情結束後大家的心情，和以後的做法。"}],
+  cues:["介紹小金魚和照顧的人","發現金魚生病了","大家一起救金魚","金魚好了以後"]}
+];
+let cur = 0;
+const P = () => PASSAGES[cur];
+const pgOf = n => P().groups.findIndex(g=>n>=g.from&&n<=g.to)+1;
+
+/* 分頁 */
+const tabs=[["t1","p1"],["t2","p2"],["t4","p4"],["t3","p3"]];
+function show(t){ tabs.forEach(([a,b])=>{ const on=a===t; $(a).setAttribute("aria-selected",on); $(b).hidden=!on; }); if(t==="t3"&&!quiz) startQuiz(); window.scrollTo({top:0}); }
+tabs.forEach(([a])=>$(a).onclick=()=>show(a));
+$("goPractice").onclick=()=>show("t2");
+
+/* 合併示意 */
+$("merge").innerHTML = STORY.map((_,i)=>{ const g=gOf(i+1); const first=GROUPS[g-1].from===i+1; return `<div class="blk${first?" first":""}" style="--gc:var(--g${g});--gcs:var(--g${g}s)">${NUM[i]}</div>`; }).join("");
+$("mergetags").innerHTML = GROUPS.map((g,i)=>`<span class="mtag" style="--gc:var(--g${i+1})">意義段${i+1}：第${g.from}～${g.to}自然段・${g.part}</span>`).join("");
+$("mergeBtn").onclick=()=>{ const m=$("merge"); m.classList.toggle("on"); $("mergeBtn").textContent=m.classList.contains("on")?"拆回自然段":"合併成意義段"; };
+
+/* 動手分段 */
+let cuts = new Set();
+function renderPick(){
+  $("pPick").innerHTML = PASSAGES.map((p,i)=>`<button class="pk" role="tab" data-p="${i}" aria-selected="${i===cur}">〈${p.title}〉<small>${p.tag}</small></button>`).join("");
+  $("pPick").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{ cur=+b.dataset.p; cuts.clear(); $("result").hidden=true; renderPick(); renderHint(); renderStory(false); });
+  $("pTitle").textContent = `動手把〈${P().title}〉分成意義段`;
+}
+function renderStory(reveal){
+  const paras=P().paras; let h=`<h3 class="ttl">${P().title}</h3>`;
+  paras.forEach((t,i)=>{
+    const n=i+1, cls = reveal?` g${pgOf(n)}`:"";
+    h += `<div class="para${cls}"><span class="no">${NUM[i]}</span><p>${t}</p></div>`;
+    if(n<paras.length) h += `<div class="cut${cuts.has(n)?" on":""}"><button data-cut="${n}" ${reveal?"disabled":""}>✂ 在這裡分段</button><span class="rule"></span></div>`;
+  });
+  $("story").innerHTML=h;
+  $("cnt").textContent = cuts.size+1;
+  $("story").querySelectorAll("[data-cut]").forEach(b=>b.onclick=()=>{ const n=+b.dataset.cut; cuts.has(n)?cuts.delete(n):cuts.add(n); renderStory(false); });
+}
+function myGroups(){ const arr=[...cuts].sort((a,b)=>a-b); const out=[]; let s=1; arr.forEach(c=>{out.push([s,c]);s=c+1;}); out.push([s,P().paras.length]); return out; }
+function renderHint(){ const G=P().groups;
+  $("hintBox").innerHTML = `<b>提示</b>：這篇可以分成 ${G.length} 個意義段，依照順序是：<div class="hints">${G.map((g,i)=>`<div class="hc" style="--gc:var(--g${i+1})"><span class="pt">${g.part}</span>${P().cues[i]}</div>`).join("")}</div>`; }
+$("resetCut").onclick=()=>{ cuts.clear(); $("result").hidden=true; renderStory(false); };
+$("checkCut").onclick=()=>{
+  const G=P().groups, src=P().src;
+  const mine=myGroups(); const ref=new Set(G.slice(0,-1).map(g=>g.to));
+  const same = cuts.size===ref.size && [...ref].every(c=>cuts.has(c));
+  const hit = [...cuts].filter(c=>ref.has(c)).length;
+  const next = cur<PASSAGES.length-1 ? `<button class="btn" id="nextP">下一篇：〈${PASSAGES[cur+1].title}〉</button>` : `<button class="btn" id="toQuiz">去做小測驗</button>`;
+  renderStory(true);
+  $("result").hidden=false;
+  $("result").innerHTML = `<h3>${same?`和${src}的分法一樣！`:`${src}是這樣分的`}</h3>
+    <p>你的分法：${mine.map(([a,b])=>a===b?`第${a}段`:`第${a}～${b}段`).join("／")}${cuts.size?`（有 ${hit} 個分段點和${src}一樣）`:""}</p>
+    <div class="tblwrap"><table class="res"><tr><th>意義段</th><th>自然段</th><th>段落大意</th><th>結構</th></tr>
+    ${G.map((g,i)=>`<tr><td style="white-space:nowrap">第 ${i+1} 段</td><td style="white-space:nowrap">${g.from===g.to?g.from:g.from+"～"+g.to}</td><td class="s">${g.sum}${g.why?`<div class="why2">${g.why}</div>`:""}</td><td><span class="pill" style="--gc:var(--g${i+1})">${g.part}</span></td></tr>`).join("")}</table></div>
+    <p class="note" style="margin-top:10px">意義段的分法不只一種。只要說得出「為什麼這幾段的重點一樣」，就是好的分法。和同學比一比，說說你的理由。</p>
+    <div class="actions"><button class="btn ghost" id="again2">再分一次</button>${next}</div>`;
+  $("again2").onclick=()=>$("resetCut").click();
+  if($("nextP")) $("nextP").onclick=()=>{ cur++; cuts.clear(); $("result").hidden=true; renderPick(); renderHint(); renderStory(false); window.scrollTo({top:0}); };
+  if($("toQuiz")) $("toQuiz").onclick=()=>show("t3");
+  $("result").scrollIntoView({behavior:"smooth",block:"start"});
+};
+renderPick(); renderHint(); renderStory(false);
+
+
+/* 課堂練習：小狗豆豆的球 */
+const DOG = ["小狗<u class=pn>豆豆</u>最喜歡的玩具，是一顆紅色的皮球。一天早上，牠找遍了院子，都看不到皮球，急得汪汪叫。",
+"<u class=pn>豆豆</u>跑到花園，問正在晒太陽的貓咪：「你有看到我的紅皮球嗎？」貓咪搖搖頭。",
+"<u class=pn>豆豆</u>又跑到池塘邊問青蛙，青蛙「呱」了一聲，說沒有看到。",
+"最後，<u class=pn>豆豆</u>垂頭喪氣的回到狗屋。一抬頭，牠竟然看見皮球就卡在屋頂旁的樹枝上！原來是昨天颳大風，把皮球吹上去了。",
+"<u class=pn>豆豆</u>請小主人幫忙拿下皮球，開心的搖著尾巴。牠決定以後玩完球，一定要把球收進狗屋裡。"];
+const DG = [
+ {from:1,to:1,part:"起因",sum:"<u class=pn>豆豆</u>最喜歡的紅皮球不見了，牠急得汪汪叫。",why:"第一段就把「皮球不見了」說完了，一個自然段也可以自己成為一個意義段。"},
+ {from:2,to:3,part:"經過一",sum:"<u class=pn>豆豆</u>到處問貓咪和青蛙，大家都沒看到皮球。",why:"第二段問貓咪、第三段問青蛙，都是在「問別人有沒有看到」，所以合在一起。"},
+ {from:4,to:4,part:"經過二",sum:"<u class=pn>豆豆</u>回到狗屋，發現皮球被大風吹到樹枝上。",why:"第四段的重點換成「找到皮球」，和前面問別人不一樣，所以另成一個意義段。"},
+ {from:5,to:5,part:"結果",sum:"<u class=pn>豆豆</u>請小主人拿下皮球，決定以後玩完要把球收好。",why:"第五段寫事情怎麼收尾，還有<u class=pn>豆豆</u>下的決心，是故事的結果。"}];
+const DSTEPS = [
+ {name:"讀文章",hint:"先把〈小狗豆豆的球〉讀一遍。想一想：故事裡發生了什麼事？"},
+ {name:"數自然段",hint:"找一找「空兩格」的地方。注意：句子換行不算新的一段，要開頭空兩格才是新的自然段。"},
+ {name:"讀段落大意",hint:"這篇可以分成四個意義段：起因、經過一、經過二、結果。讀一讀四張卡片，猜猜看每張卡片說的是第幾段？"},
+ {name:"對答案",hint:"點一下卡片，看看答案和理由。說說看：為什麼這幾段可以合在一起？"}];
+let dStep=0, dOpen=new Set();
+const dgOf = n => DG.findIndex(g=>n>=g.from&&n<=g.to)+1;
+function renderDog(){
+  $("dStepLabel").innerHTML = `步驟 <b>${dStep+1}</b> / ${DSTEPS.length}：${DSTEPS[dStep].name}`;
+  $("dSteps").innerHTML = DSTEPS.map((x,i)=>`<span class="${i===dStep?"on":i<dStep?"done":""}">${i+1} ${x.name}</span>`).join("");
+  $("dHint").textContent = DSTEPS[dStep].hint;
+  $("dPrev").disabled = dStep===0; $("dNext").textContent = dStep===DSTEPS.length-1?"全部揭曉":"下一步";
+  const st=$("dStory"); st.className = "card story big"+(dStep===1?" s-count":"")+(dStep>=2?" s-group":"");
+  st.innerHTML = `<h3>小狗豆豆的球</h3>`+DOG.map((t,i)=>{ const g=dgOf(i+1); const col = dStep===3 && dOpen.has(g-1) ? ` g${g}` : ""; return `<div class="dp${col}"><span class="no">${NUM[i]}</span><span class="ind" aria-hidden="true"></span><p>${t}</p></div>`; }).join("")
+    + (dStep===1?`<div class="dcount">共有 5 個自然段</div>`:"");
+  const sum=$("dSum");
+  if(dStep<2){ sum.innerHTML=""; return; }
+  sum.innerHTML = DG.map((g,i)=>{ const open = dStep===3 && dOpen.has(i); const rg = g.from===g.to?`第 <b>${open?NUM[g.from-1]:"？"}</b> 段`:`第 <b>${open?NUM[g.from-1]+"～"+NUM[g.to-1]:"？"}</b> 段`;
+    return `<${dStep===3?"button":"div"} class="sc" data-g="${i}" style="--gc:var(--g${i+1})"><span class="pt">意義段 ${i+1}・${g.part}</span><span class="sm">${g.sum}</span><span class="rg">${rg}</span>${open?`<span class="why">${g.why}</span>`:dStep===3?`<span class="why">點我看答案</span>`:""}</${dStep===3?"button":"div"}>`; }).join("");
+  sum.querySelectorAll("button.sc").forEach(b=>b.onclick=()=>{ const i=+b.dataset.g; dOpen.has(i)?dOpen.delete(i):dOpen.add(i); renderDog(); });
+}
+$("dPrev").onclick=()=>{ if(dStep>0){dStep--; renderDog();} };
+$("dNext").onclick=()=>{ if(dStep<DSTEPS.length-1){dStep++; dOpen.clear(); renderDog();} else { DG.forEach((_,i)=>dOpen.add(i)); renderDog(); } };
+renderDog();
+
+/* 小測驗 */
+const NOODLE = ["媽媽生病躺在床上，<u class=pn>小安</u>想煮一碗麵給媽媽吃。","他先把水倒進鍋子，再請爸爸幫忙開火。","水滾了，<u class=pn>小安</u>把麵放進去，用筷子輕輕攪一攪。","接著，他加了青菜和一顆蛋，香味飄滿了廚房。","<u class=pn>小安</u>把麵端到媽媽床邊。","媽媽吃了一口，笑著說：「真好吃，謝謝你！」<u class=pn>小安</u>心裡甜甜的。"];
+const noodleHTML = `<details class="passage" open><summary>短文〈第一次煮麵〉</summary>${NOODLE.map(t=>`<p>${t}</p>`).join("")}</details>`;
+const QS = [
+  {q:"怎麼看出一個「自然段」從哪裡開始？",o:["第一行開頭空兩格","句子最後有句號","有人在說話","字比較大"],a:0,why:"每個自然段第一行都會空下兩格，數空兩格的地方就知道有幾段。"},
+  {q:"一個自然段可以有幾個句子？",o:["一個到好幾個","只能有一個","一定要三個","一定要十個以上"],a:0,why:"自然段由一到數個句子組成，句子互相連貫。"},
+  {q:"「意義段」是什麼？",o:["把重點相同的自然段合在一起","把每個句子分開","文章的第一段","文章裡最長的那一段"],a:0,why:"把幾個重點相同的自然段合在一起，看成同一個意義段。"},
+  {q:"為什麼文章裡人物的對話很多時，自然段也會變多？",o:["換一個人說話，通常就要另起一段","對話一定要寫很長","對話的字比較多","對話要寫在最後一段"],a:0,why:"換人說話通常就另起一個自然段，所以對話越多，自然段就越多。"},
+  {q:"〈火大了〉一共有幾個自然段？",o:["11 個","4 個","8 個","9 個"],a:0,why:"〈火大了〉有 11 個自然段，合成 4 個意義段。"},
+  {q:"〈火大了〉第五到第八自然段，主要在說什麼？",o:["消防員趕來滅火，告訴兩兄弟生氣的後果","丁丁找不到玩具車","丁丁向哥哥說對不起","兩兄弟噴火吵架"],a:0,why:"第五～八段寫東西東倒西歪、消防員來滅火，還說了噴火龍生氣的後果。"},
+  {q:"〈火大了〉第九到第十一自然段是故事的哪一部分？",o:["結果","起因","經過","開頭"],a:0,why:"丁丁向哥哥賠不是，並想好下次的做法，是故事的結果。"},
+  {pre:true,q:"〈第一次煮麵〉有幾個自然段？",o:["6 個","3 個","4 個","5 個"],a:0,why:"數一數空兩格的地方，一共有 6 個自然段。"},
+  {pre:true,q:"哪幾個自然段在說「煮麵的過程」？",o:["第二到第四段","第一到第二段","第四到第六段","只有第三段"],a:0,why:"第二段倒水開火、第三段下麵、第四段加青菜和蛋，都是煮麵的過程。"},
+  {pre:true,q:"如果把〈第一次煮麵〉分成三個意義段，哪一種分法最合理？",o:["1／2～4／5～6","1～2／3／4～6","1～5／6","1／2／3～6"],a:0,why:"第 1 段是起因（想煮麵），2～4 段是經過（煮麵），5～6 段是結果（媽媽吃了很開心）。"},
+  {pre:true,q:"〈第一次煮麵〉最後一個意義段的段落大意是什麼？",o:["小安把麵端給媽媽，媽媽吃了很開心","小安想煮麵給媽媽吃","小安把麵放進鍋子裡","爸爸幫忙開火"],a:0,why:"第 5～6 段寫小安端麵給媽媽，媽媽稱讚好吃，小安心裡甜甜的。"}
+];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+let quiz=null;
+function startQuiz(){ quiz={qs:QS.map(q=>({...q,opts:shuffle(q.o),ans:q.o[q.a]})),i:0,res:[]}; renderQuiz(); }
+function dots(){ return quiz.qs.map((_,k)=>`<span class="dot ${quiz.res[k]===true?"ok":quiz.res[k]===false?"bad":k===quiz.i?"now":""}"></span>`).join(""); }
+function renderQuiz(){
+  const P=$("p3"), {qs,i,res}=quiz;
+  if(i>=qs.length){
+    const n=res.filter(Boolean).length;
+    const msg=n===qs.length?"全對！你是分段小高手！":n>=9?"很棒！再看一下錯的題目。":n>=7?"不錯喔！回到「認識段落」再複習一下。":"別灰心，先回「認識段落」看一看，再來挑戰！";
+    const wr=qs.map((q,k)=>({q,k})).filter(x=>res[x.k]===false);
+    P.innerHTML=`<div class="card" style="text-align:center"><div class="qtype">測驗結果</div><div class="score">${n} / ${qs.length}</div><p>${msg}</p><div class="progress" style="justify-content:center">${dots()}</div>
+      ${wr.length?`<div class="review" style="text-align:left"><b>訂正一下：</b>${wr.map(({q})=>`<div class="item">${q.q}<br>正確答案：${q.ans}</div>`).join("")}</div>`:""}
+      <div class="actions" style="justify-content:center"><button class="btn ghost" id="back1">回去複習</button><button class="btn" id="again">再測一次</button></div></div>`;
+    $("again").onclick=startQuiz; $("back1").onclick=()=>show("t1"); return;
+  }
+  const q=qs[i], done=res[i]!==undefined;
+  P.innerHTML=`<div class="card"><div class="qhead"><span class="qtype">第 ${i+1} 題／共 ${qs.length} 題${q.pre?"・閱讀短文":""}</span><div class="progress">${dots()}</div></div>
+    ${q.pre?`<div style="margin-top:10px">${noodleHTML}</div>`:""}
+    <div class="qtext">${q.q}</div>
+    <div class="opts">${q.opts.map((o,k)=>`<button class="opt" data-k="${k}" ${done?"disabled":""}><span class="k">${"ABCD"[k]}</span><span>${o}</span></button>`).join("")}</div>
+    <div id="fb"></div><div class="actions" style="justify-content:flex-end"><button class="btn" id="next" hidden>${i===qs.length-1?"看結果":"下一題"}</button></div></div>`;
+  P.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    if(quiz.res[i]!==undefined) return;
+    const pick=q.opts[+b.dataset.k], ok=pick===q.ans; quiz.res[i]=ok;
+    P.querySelectorAll(".opt").forEach(x=>{x.disabled=true; if(q.opts[+x.dataset.k]===q.ans) x.classList.add("right");});
+    if(!ok) b.classList.add("wrong");
+    $("fb").innerHTML=`<div class="feedback ${ok?"ok":"bad"}"><b>${ok?"答對了！":"再想想，正確答案是「"+q.ans+"」"}</b><span class="why">${q.why}</span></div>`;
+    P.querySelector(".progress").innerHTML=dots();
+    $("next").hidden=false; $("next").focus();
+  });
+  $("next").onclick=()=>{quiz.i++;renderQuiz();window.scrollTo({top:0});};
+}
+
+/* QR code */
+if(SHARE_URL.startsWith("http") && window.QRCode){
+  $("qrBtn").hidden=false;
+  new QRCode($("qrSmall"),{text:SHARE_URL,width:152,height:152,correctLevel:QRCode.CorrectLevel.M});
+  let big=false;
+  const open=()=>{ $("overlay").hidden=false; if(!big){ new QRCode($("qrBig"),{text:SHARE_URL,width:480,height:480,correctLevel:QRCode.CorrectLevel.M}); big=true; } };
+  $("qrBtn").onclick=open; $("qrBtn").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open();}};
+  $("overlay").onclick=()=>{$("overlay").hidden=true;};
+}
+</script>
+
+</body>
+</html>
